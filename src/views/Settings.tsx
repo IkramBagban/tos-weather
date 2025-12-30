@@ -56,7 +56,6 @@ export function Settings() {
     isLoadingLocations || isLoadingDuration || isLoadingTransition ||
     isLoadingRange || isLoadingBgType || isLoadingBgColor || isLoadingBgUrl ||
     isLoadingOpacity || isLoadingFontColor || isLoadingUnit ||
-    isLoadingOpacity || isLoadingFontColor || isLoadingUnit ||
     isLoadingTime || isLoadingDate || isLoadingScale;
 
   // Location Handlers
@@ -115,7 +114,7 @@ export function Settings() {
                   type="radio"
                   checked={loc.type === 'manual'}
                   onChange={() => updateLocation(index, { type: 'manual' })}
-                  disabled={isLoading}
+                  
                 />
                 <SettingsRadioLabel>Manual</SettingsRadioLabel>
               </SettingsRadioFrame>
@@ -124,7 +123,7 @@ export function Settings() {
                   type="radio"
                   checked={loc.type === 'auto'}
                   onChange={() => updateLocation(index, { type: 'auto' })}
-                  disabled={isLoading}
+                  
                 />
                 <SettingsRadioLabel>Auto (Device)</SettingsRadioLabel>
               </SettingsRadioFrame>
@@ -143,7 +142,7 @@ export function Settings() {
                   onChange={(e) => {
                     updateLocation(index, { city: e.target.value });
                   }}
-                  disabled={isLoading}
+                  
                 />
               </SettingsInputFrame>
               <SettingsHint>Enter city name or zip code.</SettingsHint>
@@ -159,14 +158,14 @@ export function Settings() {
                 placeholder="e.g. Main Lobby (Optional)"
                 value={loc.label || ''}
                 onChange={(e) => updateLocation(index, { label: e.target.value })}
-                disabled={isLoading}
+                
               />
             </SettingsInputFrame>
             <SettingsHint>Overrides the API-provided location name.</SettingsHint>
           </SettingsField>
 
           <SettingsButtonFrame>
-            <button onClick={() => removeLocation(index)} disabled={isLoading}>
+            <button onClick={() => removeLocation(index)} >
               Remove Location
             </button>
           </SettingsButtonFrame>
@@ -174,7 +173,7 @@ export function Settings() {
       ))}
 
       <SettingsButtonFrame>
-        <button onClick={addLocation} disabled={isLoading}>+ Add Location</button>
+        <button onClick={addLocation} >+ Add Location</button>
       </SettingsButtonFrame>
 
       <SettingsField>
@@ -186,7 +185,7 @@ export function Settings() {
             max="60"
             value={cycleDuration}
             onChange={(e) => setCycleDuration(Number(e.target.value))}
-            disabled={isLoading}
+            
           />
           <span>{cycleDuration}s</span>
         </SettingsSliderFrame>
@@ -198,7 +197,7 @@ export function Settings() {
           <select
             value={transition}
             onChange={(e) => setTransition(e.target.value)}
-            disabled={isLoading}
+            
           >
             <option value="fade">Fade</option>
             <option value="slide">Slide</option>
@@ -218,7 +217,7 @@ export function Settings() {
           <select
             value={forecastRange}
             onChange={(e) => setForecastRange(e.target.value)}
-            disabled={isLoading}
+            
           >
             <option value="24h">24-Hour (Hourly)</option>
             <option value="3d">3-Day Forecast</option>
@@ -238,7 +237,7 @@ export function Settings() {
             step="0.1"
             value={uiScale}
             onChange={(e) => setUiScale(Number(e.target.value))}
-            disabled={isLoading}
+            
           />
           <span>{uiScale}x</span>
         </SettingsSliderFrame>
@@ -255,7 +254,7 @@ export function Settings() {
           <select
             value={backgroundType}
             onChange={(e) => setBackgroundType(e.target.value)}
-            disabled={isLoading}
+            
           >
             <option value="dynamic">Dynamic (Matches Weather)</option>
             <option value="solid">Solid Color</option>
@@ -272,7 +271,7 @@ export function Settings() {
               type="color"
               value={backgroundColor}
               onChange={(e) => setBackgroundColor(e.target.value)}
-              disabled={isLoading}
+              
             />
             <span>{backgroundColor}</span>
           </SettingsColorFrame>
@@ -286,7 +285,7 @@ export function Settings() {
             <input type="text" value={backgroundUrl} disabled readOnly placeholder="Select media..." />
           </SettingsInputFrame>
           <SettingsButtonFrame>
-            <button onClick={pickMedia} disabled={isLoading}>Choose from Library</button>
+            <button onClick={pickMedia} >Choose from Library</button>
             {backgroundUrl && <button onClick={() => setBackgroundUrl('')}>Clear</button>}
           </SettingsButtonFrame>
         </SettingsField>
@@ -301,7 +300,7 @@ export function Settings() {
             max="100"
             value={backgroundOpacity}
             onChange={(e) => setBackgroundOpacity(Number(e.target.value))}
-            disabled={isLoading}
+            
           />
           <span>{backgroundOpacity}%</span>
         </SettingsSliderFrame>
@@ -314,7 +313,7 @@ export function Settings() {
             type="color"
             value={fontColor}
             onChange={(e) => setFontColor(e.target.value)}
-            disabled={isLoading}
+            
           />
           <span>{fontColor}</span>
         </SettingsColorFrame>
@@ -333,7 +332,7 @@ export function Settings() {
               type="radio"
               checked={unit === 'metric'}
               onChange={() => setUnit('metric')}
-              disabled={isLoading}
+              
             />
             <SettingsRadioLabel>Celsius (°C)</SettingsRadioLabel>
           </SettingsRadioFrame>
@@ -342,7 +341,7 @@ export function Settings() {
               type="radio"
               checked={unit === 'imperial'}
               onChange={() => setUnit('imperial')}
-              disabled={isLoading}
+              
             />
             <SettingsRadioLabel>Fahrenheit (°F)</SettingsRadioLabel>
           </SettingsRadioFrame>
@@ -355,7 +354,7 @@ export function Settings() {
           <select
             value={timeFormat}
             onChange={(e) => setTimeFormat(e.target.value)}
-            disabled={isLoading}
+            
           >
             <option value="12h">12-Hour (AM/PM)</option>
             <option value="24h">24-Hour</option>
@@ -369,7 +368,7 @@ export function Settings() {
           <select
             value={dateFormat}
             onChange={(e) => setDateFormat(e.target.value)}
-            disabled={isLoading}
+            
           >
             <option value="MMM DD, YYYY">MMM DD, YYYY</option>
             <option value="MM/DD/YYYY">MM/DD/YYYY</option>
