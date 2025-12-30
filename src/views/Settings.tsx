@@ -136,7 +136,9 @@ export function Settings() {
                   type="text"
                   placeholder="e.g. Vancouver, BC"
                   value={loc.city}
-                  onChange={(e) => updateLocation(index, { city: e.target.value })}
+                  onChange={(e) => {
+                    updateLocation(index, { city: e.target.value });
+                  }}
                   disabled={isLoading}
                 />
               </SettingsInputFrame>
