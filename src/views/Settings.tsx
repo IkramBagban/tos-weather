@@ -29,6 +29,7 @@ import {
   useUnitState,
   useTimeFormatState,
   useDateFormatState,
+  useUiScaleStoreState,
   LocationConfig,
 } from '../hooks/store';
 
@@ -47,13 +48,16 @@ export function Settings() {
 
   const [isLoadingUnit, unit, setUnit] = useUnitState();
   const [isLoadingTime, timeFormat, setTimeFormat] = useTimeFormatState();
+
   const [isLoadingDate, dateFormat, setDateFormat] = useDateFormatState();
+  const [isLoadingScale, uiScale, setUiScale] = useUiScaleStoreState();
 
   const isLoading =
     isLoadingLocations || isLoadingDuration || isLoadingTransition ||
     isLoadingRange || isLoadingBgType || isLoadingBgColor || isLoadingBgUrl ||
     isLoadingOpacity || isLoadingFontColor || isLoadingUnit ||
-    isLoadingTime || isLoadingDate;
+    isLoadingOpacity || isLoadingFontColor || isLoadingUnit ||
+    isLoadingTime || isLoadingDate || isLoadingScale;
 
   // Location Handlers
   const addLocation = () => {
@@ -221,6 +225,22 @@ export function Settings() {
             <option value="7d">7-Day Forecast</option>
           </select>
         </SettingsSelectFrame>
+      </SettingsField>
+
+      <SettingsField>
+        <SettingsLabel>UI Scale</SettingsLabel>
+        <SettingsSliderFrame>
+          <input
+            type="range"
+            min="0.5"
+            max="3.0"
+            step="0.1"
+            value={uiScale}
+            onChange={(e) => setUiScale(Number(e.target.value))}
+            disabled={isLoading}
+          />
+          <span>{uiScale}x</span>
+        </SettingsSliderFrame>
       </SettingsField>
 
       <SettingsDivider />
