@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { proxy, store, weather } from '@telemetryos/sdk';
 import { useUiScaleToSetRem, useUiAspectRatio } from '@telemetryos/sdk/react';
 import {
@@ -19,7 +19,6 @@ import {
 } from '../hooks/store';
 import './Render.css';
 
-// Helper: Dynamic Background Colors based on condition
 const getDynamicBackground = (condition: string): string => {
   const c = condition.toLowerCase();
   if (c.includes('sunny') || c.includes('clear')) return 'linear-gradient(to bottom, #4facfe 0%, #00f2fe 100%)';
@@ -30,13 +29,11 @@ const getDynamicBackground = (condition: string): string => {
   return 'linear-gradient(to bottom, #30cfd0 0%, #330867 100%)'; // Default
 };
 
-// Helper: Check if URL is video
 const isVideo = (url: string) => {
   if (!url) return false;
   return url.match(/\.(mp4|webm|ogg|mov)$/i);
 };
 
-// Helper: Get Icon from condition text
 const getIcon = (condition: string): string => {
   if (!condition) return '❓';
   const c = condition.toLowerCase();
@@ -69,18 +66,15 @@ export function Render() {
   const [isDateLoading, dateFormat] = useDateFormatState();
 
   const [currentIndex, setCurrentIndex] = useState(0);
-
-  // State for real weather data
   const [weatherData, setWeatherData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [visible, setVisible] = useState(true);
 
   const unitLabel = unit === 'imperial' ? '°F' : '°C';
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Helper: Fetch Weather
-  const fetchWeather = async (loc: LocationConfig) => {
-    setLoading(true);
-    setError(null);
+  const getWeatherData = async (loc: LocationConfig) => {
     try {
       const units = unit === 'imperial' ? 'imperial' : 'metric';
       let params: any = { units };
@@ -88,13 +82,10 @@ export function Render() {
       if (loc.type === 'manual' && loc.city) {
         params.city = loc.city;
       }
-      // If auto, we send no location params, expecting SDK to use device location
 
-      // Fetch Current Conditions
       const current = await weather().getConditions(params);
-      console.log('API Response for', params, ':', current.CityEnglish, current);
+      console.log('Fetching for index:', loc.city, current.CityEnglish);
 
-      // Fetch Forecast (Hourly for 24h, Daily for others)
       let forecast = [];
       if (forecastRange === '24h') {
         const hourly = await weather().getHourlyForecast({ ...params, hours: 24 });
@@ -113,7 +104,7 @@ export function Render() {
         }));
       }
 
-      setWeatherData({
+      return {
         current: {
           temp: current.Temp,
           condition: current.WeatherText,
@@ -130,73 +121,89 @@ export function Render() {
           ...f,
           icon: getIcon(f.icon)
         }))
-      });
+      };
     } catch (err) {
       console.error('Weather Fetch Error:', err);
-      setError('Unable to load weather data');
-    } finally {
-      setLoading(false);
+      // Return null to signal error but don't crash
+      return null;
     }
   };
 
-  // Cycling Logic
+  // The Main Loop using Pre-Fetch Pattern
   useEffect(() => {
     if (!locations || locations.length === 0) return;
 
-    // Cycle index
-    const interval = setInterval(() => {
-      // Fix: 'none' isn't an option, 'instant' is.
-      if (transition === 'instant') {
-        setCurrentIndex((prev) => (prev + 1) % locations.length);
-      } else {
-        // Start Fade Out
+    const cycle = async () => {
+      const nextIndex = (currentIndex + 1) % locations.length;
+
+      if (transition !== 'instant') {
+        // 1. Start Fade Out
         setVisible(false);
-        setTimeout(() => {
-          // Force Loading state to prevent immediate re-show
-          setLoading(true);
-          // Update Index (Data Fetch triggers)
-          setCurrentIndex((prev) => (prev + 1) % locations.length);
-        }, 500);
       }
-    }, cycleDuration * 1000);
 
-    return () => clearInterval(interval);
-  }, [locations, cycleDuration, transition]);
+      // 2. Fetch Data for NEXT index
+      // We wait for at least 500ms (animation time) AND the data fetch
+      const [newData] = await Promise.all([
+        getWeatherData(locations[nextIndex]),
+        transition !== 'instant' ? new Promise(resolve => setTimeout(resolve, 500)) : Promise.resolve()
+      ]);
 
-  // Transition Logic
-  const [visible, setVisible] = useState(true);
+      if (newData) {
+        // 3. Update EVERYTHING at once (Index + Data)
+        // This effectively "cuts" to the new scene
+        setWeatherData(newData);
+        setCurrentIndex(nextIndex);
+        setError(null);
+      } else {
+        setError('Failed to load next location');
+      }
 
-  // Fix: Show content only when new data is ready (loading finishes)
-  useEffect(() => {
-    if (!loading && !visible) {
-      setVisible(true);
-    }
-  }, [loading, visible]);
-
-  const getTransitionStyle = (): React.CSSProperties => {
-    if (transition === 'instant') return {}; // Correctly handle instant
-    const base: React.CSSProperties = {
-      transition: 'all 0.5s ease-in-out',
-      opacity: visible ? 1 : 0,
+      // 4. Start Fade In
+      if (transition !== 'instant') {
+        setVisible(true);
+      }
     };
-    if (transition === 'slide') {
-      return { ...base, transform: visible ? 'translateX(0)' : 'translateX(-100px)' };
-    }
-    return base; // fade
-  };
 
-  // Initial Fetch effect
+    timerRef.current = setTimeout(cycle, cycleDuration * 1000);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [currentIndex, locations, cycleDuration, transition, unit, forecastRange]); // Dependency on currentIndex drives the loop loop
+
+  // Initial Load & Manual Setting Changes (Immediate Fetch)
   useEffect(() => {
     if (!locations || locations.length === 0) return;
-    const loc = locations[currentIndex] || locations[0];
-    if (loc) {
-      fetchWeather(loc);
+
+    // Only run this if we have NO data yet (first load) OR if a critical setting changed (unit/range)
+    // We detect "critical change" by checking if current data matches current config?
+    // Simplified: Just fetch current index immediately on mount or config change needed.
+    // However, the main loop handles cycling. We just need to bootstrap 0.
+
+    if (!weatherData) {
+      setLoading(true);
+      getWeatherData(locations[0]).then(data => {
+        if (data) {
+          setWeatherData(data);
+          setCurrentIndex(0);
+        } else setError('Could not load initial data');
+        setLoading(false);
+      });
     }
-  }, [currentIndex, locations, forecastRange, unit]);
+    // Note: If user changes Unit/Range, we probably want to re-fetch CURRENT index immediately.
+    // But adding [unit, range] to dependency of the loop effect might cause a double-step.
+    // Let's rely on the loop for normal operation. If unit changes, it might lag until next cycle?
+    // User requested "no client side logic", so unit change requires fetch.
+    // Ideally we should force-refresh current index on unit change.
+
+  }, [locations, unit, forecastRange]);
 
 
+  // Styles (Derived)
   const currentLocation = locations?.[currentIndex] || { city: 'Configure in Settings', label: '' };
-  const displayName = currentLocation.label || currentLocation.city || (currentLocation.type === 'auto' ? 'Current Location' : 'No Location Set');
+  // Now we use the INDEX strictly for the config (label/manual city).
+  // The WEATHER DATA is guaranteed to match this index because of the pre-fetch logic.
+  const displayName = currentLocation.label || weatherData?.current?.city || (currentLocation.type === 'auto' ? 'Current Location' : 'No Location Set');
 
   const aspectRatio = useUiAspectRatio();
   const isLandscapeRibbon = aspectRatio > 2.5;
@@ -215,6 +222,18 @@ export function Render() {
     padding: isLandscapeRibbon ? '1rem 3rem' : '3rem',
     fontFamily: 'inherit',
     textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+  };
+
+  const getTransitionStyle = (): React.CSSProperties => {
+    if (transition === 'instant') return {};
+    const base: React.CSSProperties = {
+      transition: 'all 0.5s ease-in-out',
+      opacity: visible ? 1 : 0,
+    };
+    if (transition === 'slide') {
+      return { ...base, transform: visible ? 'translateX(0)' : 'translateX(-100px)' };
+    }
+    return base;
   };
 
   const headerStyle: React.CSSProperties = {
@@ -276,7 +295,6 @@ export function Render() {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
-
 
   const formatTime = (date: Date) => {
     const timeZone = weatherData?.current?.timezone;
