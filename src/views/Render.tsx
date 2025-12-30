@@ -171,14 +171,33 @@ export function Render() {
     };
   }, [currentIndex, locations, cycleDuration, transition, unit, forecastRange]); // Dependency on currentIndex drives the loop loop
 
+  // React to Config Changes (Unit, Range) - Immediate Update
+  useEffect(() => {
+    if (!weatherData || !locations || locations.length === 0) return;
+
+    const refreshCurrent = async () => {
+      // Don't set global loading true here to avoid full screen flicker, 
+      // but we could if we wanted to show it's updating. 
+      // Let's just update quietly or use a small indicator if needed.
+      // User complaint was "not reflecting", so we must update data.
+      const loc = locations[currentIndex];
+      if (loc) {
+        setLoading(true);
+        const newData = await getWeatherData(loc);
+        if (newData) {
+          setWeatherData(newData);
+        }
+        setLoading(false);
+      }
+    };
+
+    refreshCurrent();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unit, forecastRange]); // Only run when these meaningful configs change, NOT on currentIndex change (handled by loop)
+
   // Initial Load & Manual Setting Changes (Immediate Fetch)
   useEffect(() => {
     if (!locations || locations.length === 0) return;
-
-    // Only run this if we have NO data yet (first load) OR if a critical setting changed (unit/range)
-    // We detect "critical change" by checking if current data matches current config?
-    // Simplified: Just fetch current index immediately on mount or config change needed.
-    // However, the main loop handles cycling. We just need to bootstrap 0.
 
     if (!weatherData) {
       setLoading(true);
@@ -190,13 +209,7 @@ export function Render() {
         setLoading(false);
       });
     }
-    // Note: If user changes Unit/Range, we probably want to re-fetch CURRENT index immediately.
-    // But adding [unit, range] to dependency of the loop effect might cause a double-step.
-    // Let's rely on the loop for normal operation. If unit changes, it might lag until next cycle?
-    // User requested "no client side logic", so unit change requires fetch.
-    // Ideally we should force-refresh current index on unit change.
-
-  }, [locations, unit, forecastRange]);
+  }, [locations]);
 
 
   // Styles (Derived)
