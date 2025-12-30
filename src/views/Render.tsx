@@ -208,6 +208,7 @@ export function Render() {
   const aspectRatio = useUiAspectRatio();
   const isLandscapeRibbon = aspectRatio > 2.5;
   const isExtremeRibbon = aspectRatio > 3.5;
+  const isVerticalStrip = aspectRatio < 0.6;
 
   const containerStyle: React.CSSProperties = {
     color: fontColor,
@@ -347,48 +348,91 @@ export function Render() {
         ...getTransitionStyle()
       }}>
 
-        {isExtremeRibbon ? (
-          // EXTREME RIBBON LAYOUT (> 3.5)
-          <>
-            <div style={{ position: 'absolute', top: '1rem', left: '2rem', fontSize: '2.5rem', fontWeight: 'bold', zIndex: 10 }}>
-              {currentLocation.label || weatherData.current.city || displayName}
-            </div>
-            <div style={{ position: 'absolute', top: '1rem', right: '2rem', textAlign: 'right', zIndex: 10 }}>
-              <div style={{ fontSize: '3rem', fontWeight: 'bold', lineHeight: 1 }}>{formatTime(currentTime)}</div>
+        {isVerticalStrip ? (
+          // VERTICAL STRIP LAYOUT (< 0.6)
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '2rem 1rem', textAlign: 'center' }}>
+
+            {/* 1. Header (Stacked) */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '2rem' }}>
+              <div style={{ fontSize: '3rem', fontWeight: 'bold', lineHeight: 1.1 }}>
+                {currentLocation.label || weatherData.current.city || displayName}
+              </div>
+              <div style={{ fontSize: '2.5rem', fontWeight: 'bold', marginTop: '0.5rem' }}>{formatTime(currentTime)}</div>
               <div style={{ fontSize: '1.5rem', opacity: 0.8 }}>{formatDate(currentTime)}</div>
             </div>
 
-            <div style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '0 4rem',
-              width: '100%',
-              marginTop: '2rem'
-            }}>
+            {/* 2. Hero (Stacked) */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '2rem' }}>
+              <div className="weather-icon-3d" style={{ fontSize: '9rem', marginBottom: '1rem' }}>{weatherData.current.icon}</div>
+              <div style={{ fontSize: '7rem', fontWeight: 'bold', lineHeight: 0.9 }}>
+                {Math.round(weatherData.current.temp)}{unitLabel}
+              </div>
+              <div style={{ fontSize: '2rem', marginTop: '0.5rem', fontWeight: '500' }}>{weatherData.current.condition}</div>
+            </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
-                <div className="weather-icon-3d" style={{ fontSize: '9rem' }}>{weatherData.current.icon}</div>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: '8rem', fontWeight: 'bold', lineHeight: 0.9 }}>
-                    {Math.round(weatherData.current.temp)}{unitLabel}
+            {/* 3. Secondary Details (Option B: Vertical Stack) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', fontSize: '1.6rem', opacity: 0.8, marginBottom: '2rem', width: '100%', alignItems: 'center' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-around', width: '100%' }}>
+                <span>🌡️ {Math.round(weatherData.current.feelsLike)}°</span>
+                <span>💧 {weatherData.current.humidity}%</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-around', width: '100%' }}>
+                <span>💨 {Math.round(weatherData.current.wind)}</span>
+                <span>🌧️ {weatherData.current.precip}%</span>
+              </div>
+            </div>
+
+            {/* 4. Forecast (Vertical List) */}
+            {forecastRange !== 'none' && (
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1rem',
+                width: '100%',
+                borderTop: `1px solid ${fontColor}`,
+                paddingTop: '1.5rem'
+              }}>
+                {weatherData.forecast.slice(0, 5).map((day: any, i: number) => (
+                  <div key={i} className="weather-forecast-item" style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    width: '100%',
+                    fontSize: '1.8rem',
+                    gap: '1rem' // Added explicit gap
+                  }}>
+                    <div className="weather-forecast-day" style={{ width: '30%', textAlign: 'left' }}>{day.day}</div>
+                    <div className="weather-forecast-icon weather-icon-3d" style={{ width: '30%', textAlign: 'center', fontSize: '2.5rem' }}>{day.icon}</div>
+                    <div className="weather-forecast-temp" style={{ width: '30%', textAlign: 'right' }}>{Math.round(day.temp)}°</div>
                   </div>
-                  <div style={{ fontSize: '2.5rem', marginTop: '0.5rem', fontWeight: '500' }}>
-                    {weatherData.current.condition}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '1.6rem', opacity: 0.8, marginLeft: '3rem', justifyContent: 'center' }}>
-                  <span>🌡️ {Math.round(weatherData.current.feelsLike)}°</span>
-                  <span>💧 {weatherData.current.humidity}%</span>
-                  <span>💨 {Math.round(weatherData.current.wind)}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : isExtremeRibbon ? (
+          // EXTREME RIBBON LAYOUT (> 3.5)
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '0 3rem' }}>
+
+            {/* LEFT: City, Icon, Temp, Condition */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+              <div style={{ fontSize: '3rem', fontWeight: 'bold', marginBottom: '0.5rem', lineHeight: 1.1 }}>
+                {currentLocation.label || weatherData.current.city || displayName}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+                <div className="weather-icon-3d" style={{ fontSize: '7rem' }}>{weatherData.current.icon}</div>
+                <div style={{ fontSize: '7rem', fontWeight: 'bold', lineHeight: 1 }}>
+                  {Math.round(weatherData.current.temp)}{unitLabel}
                 </div>
               </div>
+              <div style={{ fontSize: '2.5rem', marginTop: '0.5rem', fontWeight: '500' }}>{weatherData.current.condition}</div>
+            </div>
 
-              {/* FORECAST: REMOVED SLICE LIMIT */}
+            {/* CENTER: Forecast & Secondary Stats */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, padding: '0 4rem' }}>
+              {/* Forecast */}
               {forecastRange !== 'none' && (
-                <div style={{ display: 'flex', gap: '2rem' }}>
+                <div style={{ display: 'flex', gap: '3rem', marginBottom: '1.5rem', width: '100%', justifyContent: 'center' }}>
                   {weatherData.forecast.map((day: any, i: number) => (
                     <div key={i} className="weather-forecast-item" style={{ minWidth: '70px' }}>
                       <div className="weather-forecast-day">{day.day}</div>
@@ -398,9 +442,21 @@ export function Render() {
                   ))}
                 </div>
               )}
-
+              {/* Secondary Stats (Moved Below Forecast) */}
+              <div style={{ display: 'flex', gap: '3rem', fontSize: '1.8rem', opacity: 0.8 }}>
+                <span>🌡️ {Math.round(weatherData.current.feelsLike)}°</span>
+                <span>💧 {weatherData.current.humidity}%</span>
+                <span>💨 {Math.round(weatherData.current.wind)}</span>
+              </div>
             </div>
-          </>
+
+            {/* RIGHT: Time & Date */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', textAlign: 'right' }}>
+              <div style={{ fontSize: '6rem', fontWeight: 'bold', lineHeight: 1 }}>{formatTime(currentTime)}</div>
+              <div style={{ fontSize: '2.5rem', opacity: 0.8, marginTop: '0.5rem' }}>{formatDate(currentTime)}</div>
+            </div>
+
+          </div>
         ) : isLandscapeRibbon ? (
           // RIBBON LAYOUT (Split Left/Right)
           <>
@@ -474,13 +530,13 @@ export function Render() {
             </div>
           </>
         ) : (
-          // STANDARD LAYOUT (Original)
+          // STANDARD LAYOUT (Original) - Scaled 1.1x
           <>
             <header style={headerStyle}>
-              <div style={{ fontSize: '3rem', fontWeight: 'bold' }}>{currentLocation.label || weatherData.current.city || displayName}</div>
+              <div style={{ fontSize: '3.3rem', fontWeight: 'bold' }}>{currentLocation.label || weatherData.current.city || displayName}</div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '3rem', fontWeight: 'bold' }}>{formatTime(currentTime)}</div>
-                <div style={{ fontSize: '1.5rem', opacity: 0.8 }}>{formatDate(currentTime)}</div>
+                <div style={{ fontSize: '3.3rem', fontWeight: 'bold' }}>{formatTime(currentTime)}</div>
+                <div style={{ fontSize: '1.65rem', opacity: 0.8 }}>{formatDate(currentTime)}</div>
               </div>
             </header>
 
@@ -489,22 +545,22 @@ export function Render() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '4rem'
+              gap: '4.4rem'
             }}>
-              <div className="weather-icon-3d" style={{ fontSize: '12rem' }}>{weatherData.current.icon}</div>
+              <div className="weather-icon-3d" style={{ fontSize: '13.2rem' }}>{weatherData.current.icon}</div>
               <div>
-                <div style={{ fontSize: '10rem', lineHeight: 1 }}>
+                <div style={{ fontSize: '11rem', lineHeight: 1 }}>
                   {Math.round(weatherData.current.temp)}{unitLabel}
                 </div>
-                <div style={{ fontSize: '4rem' }}>{weatherData.current.condition}</div>
+                <div style={{ fontSize: '4.4rem' }}>{weatherData.current.condition}</div>
               </div>
             </main>
 
             <div style={{
               display: 'flex',
-              gap: '4rem',
-              fontSize: '2rem',
-              marginBottom: '3rem',
+              gap: '4.4rem',
+              fontSize: '2.2rem',
+              marginBottom: '3.3rem',
               opacity: 0.8,
               justifyContent: 'center'
             }}>
@@ -517,9 +573,9 @@ export function Render() {
             {forecastRange !== 'none' && (
               <footer style={{
                 display: 'flex',
-                gap: '2rem',
+                gap: '2.2rem',
                 borderTop: `1px solid ${fontColor}`,
-                paddingTop: '2rem',
+                paddingTop: '2.2rem',
                 overflow: 'hidden'
               }}>
                 {weatherData.forecast.map((day: any, i: number) => (
