@@ -15,6 +15,7 @@ import {
   useTimeFormatState,
   useDateFormatState,
   useUiScaleStoreState,
+  LocationConfig,
 } from '../hooks/store';
 
 // Mock Data for "Basic Render"
@@ -35,11 +36,28 @@ const MOCK_WEATHER = {
   ]
 };
 
+// Helper: Dynamic Background Colors based on condition
+const getDynamicBackground = (condition: string): string => {
+  const c = condition.toLowerCase();
+  if (c.includes('sunny') || c.includes('clear')) return 'linear-gradient(to bottom, #4facfe 0%, #00f2fe 100%)';
+  if (c.includes('cloud')) return 'linear-gradient(to bottom, #89f7fe 0%, #66a6ff 100%)';
+  if (c.includes('rain')) return 'linear-gradient(to bottom, #cfd9df 0%, #e2ebf0 100%)';
+  if (c.includes('snow')) return 'linear-gradient(to bottom, #e6e9f0 0%, #eef1f5 100%)';
+  if (c.includes('night')) return 'linear-gradient(to bottom, #0f2027 0%, #203a43 100%)';
+  return 'linear-gradient(to bottom, #30cfd0 0%, #330867 100%)'; // Default
+};
+
+// Helper: Check if URL is video
+const isVideo = (url: string) => {
+  if (!url) return false;
+  return url.match(/\.(mp4|webm|ogg|mov)$/i);
+};
+
 export function Render() {
   const [isUiScaleLoading, uiScale] = useUiScaleStoreState();
   useUiScaleToSetRem(uiScale);
 
-  // Store Hooks - Destructure [isLoading, value]
+  // Store Hooks
   const [isLocationsLoading, locations] = useLocationsState();
   const [isDurationLoading, cycleDuration] = useCycleDurationState();
   const [isTransitionLoading, transition] = useTransitionState();
@@ -54,7 +72,7 @@ export function Render() {
   const [isDateLoading, dateFormat] = useDateFormatState();
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [weather, setWeather] = useState<any>(null); // Replace mock with real whenever ready
+  const [weather, setWeather] = useState<any>(null);
 
   // Cycling Logic
   useEffect(() => {
@@ -65,9 +83,8 @@ export function Render() {
     return () => clearInterval(interval);
   }, [locations, cycleDuration]);
 
-  // Mock Fetching Logic (placeholder for API)
+  // Mock Fetching Logic
   useEffect(() => {
-    // Simulate fetch
     setWeather(MOCK_WEATHER);
   }, [currentIndex, locations]);
 
@@ -84,22 +101,57 @@ export function Render() {
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'space-between',
-    padding: '3rem', // Title safe zone
+    padding: '3rem',
+    fontFamily: 'inherit',
   };
 
-  const bgStyle: React.CSSProperties = {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    zIndex: -1,
-    backgroundColor: bgType === 'solid' ? bgColor : '#000', // Default or solid
-    backgroundImage: bgType === 'image' && bgUrl ? `url(${bgUrl})` : undefined,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    opacity: (bgOpacity || 100) / 100,
-    transition: 'background 0.5s ease',
+  const currentCondition = weather?.current?.condition || '';
+  const opacityValue = (bgOpacity ?? 100) / 100;
+
+  // Background Rendering Logic
+  const renderBackground = () => {
+    const commonStyle: React.CSSProperties = {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      zIndex: -1,
+      opacity: opacityValue,
+      transition: 'all 0.5s ease',
+    };
+
+    if (bgType === 'image' && bgUrl) {
+      if (isVideo(bgUrl)) {
+        return (
+          <video
+            src={bgUrl}
+            autoPlay
+            loop
+            muted
+            playsInline
+            style={{ ...commonStyle, objectFit: 'cover' }}
+          />
+        );
+      }
+      return (
+        <div
+          style={{
+            ...commonStyle,
+            backgroundImage: `url(${bgUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        />
+      );
+    }
+
+    if (bgType === 'solid') {
+      return <div style={{ ...commonStyle, backgroundColor: bgColor }} />;
+    }
+
+    // Dynamic
+    return <div style={{ ...commonStyle, background: getDynamicBackground(currentCondition) }} />;
   };
 
   // Temperature Conversion
@@ -113,7 +165,7 @@ export function Render() {
 
   return (
     <div className="weather-app" style={containerStyle}>
-      <div className="weather-bg" style={bgStyle} />
+      {renderBackground()}
 
       {/* Header */}
       <header style={{ fontSize: '3rem', fontWeight: 'bold' }}>
