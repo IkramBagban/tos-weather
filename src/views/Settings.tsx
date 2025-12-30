@@ -21,6 +21,7 @@ import {
   useCycleDurationState,
   useTransitionState,
   useForecastRangeState,
+  useForecastCountState,
   useBackgroundTypeState,
   useBackgroundColorState,
   useBackgroundUrlState,
@@ -39,6 +40,7 @@ export function Settings() {
   const [isLoadingTransition, transition, setTransition] = useTransitionState();
 
   const [isLoadingRange, forecastRange, setForecastRange] = useForecastRangeState();
+  const [isLoadingCount, forecastCount, setForecastCount] = useForecastCountState();
 
   const [isLoadingBgType, backgroundType, setBackgroundType] = useBackgroundTypeState();
   const [isLoadingBgColor, backgroundColor, setBackgroundColor] = useBackgroundColorState(5);
@@ -331,20 +333,34 @@ export function Settings() {
       <SettingsHeading>Display Options</SettingsHeading>
 
       <SettingsField>
-        <SettingsLabel>Forecast Range</SettingsLabel>
+        <SettingsLabel>Forecast Type</SettingsLabel>
         <SettingsSelectFrame>
           <select
             value={forecastRange}
             onChange={(e) => setForecastRange(e.target.value)}
-
           >
-            <option value="24h">24-Hour (Hourly)</option>
-            <option value="3d">3-Day Forecast</option>
-            <option value="7d">7-Day Forecast</option>
+            <option value="daily">Daily</option>
+            <option value="hourly">Hourly</option>
             <option value="none">None</option>
           </select>
         </SettingsSelectFrame>
       </SettingsField>
+
+      {forecastRange !== 'none' && (
+        <SettingsField>
+          <SettingsLabel>Number of Items</SettingsLabel>
+          <SettingsInputFrame>
+            <input
+              type="number"
+              min="1"
+              max="24"
+              value={forecastCount}
+              onChange={(e) => setForecastCount(Number(e.target.value))}
+            />
+          </SettingsInputFrame>
+          <SettingsHint>Enter the number of forecast items to display (1-24).</SettingsHint>
+        </SettingsField>
+      )}
 
       <SettingsField>
         <SettingsLabel>UI Scale</SettingsLabel>

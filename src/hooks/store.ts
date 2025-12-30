@@ -16,7 +16,8 @@ export const useCycleDurationState = createUseInstanceStoreState<number>('cycleD
 export const useTransitionState = createUseInstanceStoreState<string>('transition', 'fade');
 
 // Forecast
-export const useForecastRangeState = createUseInstanceStoreState<string>('forecastRange', '3d');
+export const useForecastRangeState = createUseInstanceStoreState<string>('forecastRange', 'daily');
+export const useForecastCountState = createUseInstanceStoreState<number>('forecastCount', 5);
 
 // Visuals
 export const useBackgroundTypeState = createUseInstanceStoreState<string>('backgroundType', 'dynamic');

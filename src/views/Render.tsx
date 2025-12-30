@@ -6,6 +6,7 @@ import {
   useCycleDurationState,
   useTransitionState,
   useForecastRangeState,
+  useForecastCountState,
   useBackgroundTypeState,
   useBackgroundColorState,
   useBackgroundUrlState,
@@ -56,6 +57,7 @@ export function Render() {
   const [isDurationLoading, cycleDuration] = useCycleDurationState();
   const [isTransitionLoading, transition] = useTransitionState();
   const [isRangeLoading, forecastRange] = useForecastRangeState();
+  const [isCountLoading, forecastCount] = useForecastCountState();
   const [isBgTypeLoading, bgType] = useBackgroundTypeState();
   const [isBgColorLoading, bgColor] = useBackgroundColorState();
   const [isBgUrlLoading, bgUrl] = useBackgroundUrlState();
@@ -87,17 +89,26 @@ export function Render() {
       console.log('Fetching for index:', loc.city, current.CityEnglish);
 
       let forecast = [];
-      if (forecastRange === '24h') {
-        const hourly = await weather().getHourlyForecast({ ...params, hours: 24 });
-        forecast = hourly.slice(0, 24).map((f: any) => ({
+      const count = forecastCount || 5; // Default fallback
+
+      // Legacy support map: '24h' -> 'hourly', '3d'/'7d' -> 'daily'
+      // Default to 'daily' if unknown
+      const type = (forecastRange === '24h' || forecastRange === 'hourly') ? 'hourly' : 'daily';
+
+      if (type === 'hourly') {
+        // Hourly: Show next N hours
+        const hourly = await weather().getHourlyForecast({ ...params, hours: count });
+        forecast = hourly.slice(0, count).map((f: any) => ({
           day: new Date(f.Timestamp * 1000).toLocaleTimeString([], { hour: 'numeric' }),
           temp: f.Temp,
           icon: f.Label,
         }));
       } else {
-        const days = forecastRange === '7d' ? 7 : 3;
-        const daily = await weather().getDailyForecast({ ...params, days });
-        forecast = daily.slice(0, days).map((f: any) => ({
+        // Daily: Show next N days
+        // Ensure we fetch enough days
+        const daily = await weather().getDailyForecast({ ...params, days: count });
+        console.log('Requested daily:', count, 'Received:', daily?.length);
+        forecast = daily.slice(0, count).map((f: any) => ({
           day: new Date(f.Timestamp * 1000).toLocaleDateString([], { weekday: 'short' }),
           temp: f.MaxTemp,
           icon: f.Label,
@@ -193,7 +204,7 @@ export function Render() {
 
     refreshCurrent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unit, forecastRange]); // Only run when these meaningful configs change, NOT on currentIndex change (handled by loop)
+  }, [unit, forecastRange, forecastCount]); // Only run when these meaningful configs change, NOT on currentIndex change (handled by loop)
 
   // Initial Load & Manual Setting Changes (Immediate Fetch)
   useEffect(() => {
@@ -460,7 +471,7 @@ export function Render() {
                 borderTop: `1px solid ${fontColor}`,
                 paddingTop: '1.5rem'
               }}>
-                {weatherData.forecast.slice(0, 5).map((day: any, i: number) => (
+                {weatherData.forecast.map((day: any, i: number) => (
                   <div key={i} className="weather-forecast-item" style={{
                     display: 'flex',
                     flexDirection: 'row',
