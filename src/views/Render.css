@@ -65,3 +65,47 @@
   padding: 1rem 2rem;
   border-radius: 1rem;
 }
+
+/* --- NEW STYLES for Hybrid Approach --- */
+
+/* 3D/Shaded Icon Effect */
+.weather-icon-3d {
+  filter: drop-shadow(0 0.2rem 0.3rem rgba(0, 0, 0, 0.5));
+  transition: transform 0.3s ease;
+  display: inline-block;
+}
+
+.weather-icon-3d:hover {
+  transform: scale(1.1) rotate(5deg);
+}
+
+/* Enhanced Forecast Item */
+.weather-forecast-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  /* Tighter vertical spacing */
+}
+
+/* Slightly larger text for forecast days */
+.weather-forecast-day {
+  font-size: 1.6rem !important;
+  /* Override inline if needed, but we'll use class */
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+/* Larger icon in forecast */
+.weather-forecast-icon {
+  font-size: 2.8rem !important;
+  margin: 0.5rem 0;
+  filter: drop-shadow(0 0.1rem 0.2rem rgba(0, 0, 0, 0.4));
+}
+
+/* Larger temp in forecast */
+.weather-forecast-temp {
+  font-size: 2.2rem !important;
+  font-weight: 600;
+}

@@ -17,6 +17,7 @@ import {
   useUiScaleStoreState,
   LocationConfig,
 } from '../hooks/store';
+import './Render.css';
 
 // Helper: Dynamic Background Colors based on condition
 const getDynamicBackground = (condition: string): string => {
@@ -74,6 +75,8 @@ export function Render() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const unitLabel = unit === 'imperial' ? '°F' : '°C';
+
   // Helper: Fetch Weather
   const fetchWeather = async (loc: LocationConfig) => {
     setLoading(true);
@@ -117,8 +120,8 @@ export function Render() {
           icon: getIcon(current.WeatherText),
           humidity: current.RelativeHumidity,
           wind: current.WindSpeed,
-          windDir: current.WindDirectionEnglish || '',
-          feelsLike: current.Temp,
+          windDir: current.WindDirectionEnglish || '', // Keeping API units
+          feelsLike: current.Temp, // Using Temp as fallback
           precip: current.Precip,
           timezone: current.Timezone,
           city: current.CityLocalized || current.CityEnglish,
@@ -188,7 +191,7 @@ export function Render() {
     if (loc) {
       fetchWeather(loc);
     }
-  }, [currentIndex, locations, unit, forecastRange]);
+  }, [currentIndex, locations, forecastRange, unit]);
 
 
   const currentLocation = locations?.[currentIndex] || { city: 'Configure in Settings', label: '' };
@@ -198,7 +201,6 @@ export function Render() {
   const isLandscapeRibbon = aspectRatio > 2.5;
   const isExtremeRibbon = aspectRatio > 3.5;
 
-  // Styles
   const containerStyle: React.CSSProperties = {
     color: fontColor,
     position: 'relative',
@@ -244,10 +246,7 @@ export function Render() {
         return (
           <video
             src={bgUrl}
-            autoPlay
-            loop
-            muted
-            playsInline
+            autoPlay loop muted playsInline
             style={{ ...commonStyle, objectFit: 'cover' }}
           />
         );
@@ -263,21 +262,12 @@ export function Render() {
         />
       );
     }
-
     if (bgType === 'solid') {
       return <div style={{ ...commonStyle, backgroundColor: bgColor }} />;
     }
-
     // Dynamic
     return <div style={{ ...commonStyle, background: getDynamicBackground(currentCondition) }} />;
   };
-
-  // Temperature Conversion
-  const displayTemp = (celsius: number) => {
-    if (unit === 'imperial') return Math.round(celsius * 9 / 5 + 32);
-    return celsius;
-  };
-  const unitLabel = unit === 'imperial' ? '°F' : '°C';
 
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -366,7 +356,7 @@ export function Render() {
 
               {/* Current Weather - Horizontal */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
-                <div style={{ fontSize: '9rem' }}>{weatherData.current.icon}</div>
+                <div className="weather-icon-3d" style={{ fontSize: '9rem' }}>{weatherData.current.icon}</div>
                 <div style={{ textAlign: 'left' }}>
                   <div style={{ fontSize: '8rem', fontWeight: 'bold', lineHeight: 0.9 }}>
                     {Math.round(weatherData.current.temp)}{unitLabel}
@@ -377,22 +367,24 @@ export function Render() {
                 </div>
                 {/* Metrics integrated nicely */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '1.6rem', opacity: 0.8, marginLeft: '3rem', justifyContent: 'center' }}>
-                  <span>Feels: {Math.round(weatherData.current.feelsLike)}°</span>
-                  <span>Hum: {weatherData.current.humidity}%</span>
-                  <span>Wind: {Math.round(weatherData.current.wind)}</span>
+                  <span>🌡️ {Math.round(weatherData.current.feelsLike)}°</span>
+                  <span>💧 {weatherData.current.humidity}%</span>
+                  <span>💨 {Math.round(weatherData.current.wind)}</span>
                 </div>
               </div>
 
               {/* Forecast - Compact Horizontal on Right */}
-              <div style={{ display: 'flex', gap: '2rem' }}>
-                {weatherData.forecast.slice(0, 5).map((day: any, i: number) => (
-                  <div key={i} style={{ textAlign: 'center', minWidth: '70px' }}>
-                    <div style={{ fontSize: '1.4rem', opacity: 0.7 }}>{day.day}</div>
-                    <div style={{ fontSize: '2.2rem', margin: '0.2rem 0' }}>{day.icon}</div>
-                    <div style={{ fontSize: '1.8rem' }}>{Math.round(day.temp)}°</div>
-                  </div>
-                ))}
-              </div>
+              {forecastRange !== 'none' && (
+                <div style={{ display: 'flex', gap: '2rem' }}>
+                  {weatherData.forecast.slice(0, 5).map((day: any, i: number) => (
+                    <div key={i} className="weather-forecast-item" style={{ minWidth: '70px' }}>
+                      <div className="weather-forecast-day">{day.day}</div>
+                      <div className="weather-forecast-icon weather-icon-3d">{day.icon}</div>
+                      <div className="weather-forecast-temp">{Math.round(day.temp)}°</div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
             </div>
           </>
@@ -408,7 +400,6 @@ export function Render() {
               paddingLeft: '3rem',
               alignItems: 'flex-start',
               textAlign: 'left',
-              /* Optional border/divider can be added here if needed, but keeping it clean for now */
               opacity: 0.9
             }}>
               <div style={{ fontSize: '3rem', fontWeight: 'bold', marginBottom: '0.5rem', lineHeight: 1.1 }}>
@@ -433,7 +424,7 @@ export function Render() {
             }}>
               {/* Current Weather - HERO */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '4rem', marginBottom: '1rem' }}>
-                <div style={{ fontSize: '10rem' }}>{weatherData.current.icon}</div>
+                <div className="weather-icon-3d" style={{ fontSize: '10rem' }}>{weatherData.current.icon}</div>
                 <div style={{ textAlign: 'left' }}>
                   <div style={{ fontSize: '9rem', fontWeight: 'bold', lineHeight: 0.9 }}>
                     {Math.round(weatherData.current.temp)}{unitLabel}
@@ -445,30 +436,32 @@ export function Render() {
               </div>
 
               {/* Secondary Metrics (Horizontal) - Condensed */}
-              <div style={{ display: 'flex', gap: '3rem', fontSize: '1.8rem', opacity: 0.8, marginBottom: '1rem' }}>
-                <span>Feels: {Math.round(weatherData.current.feelsLike)}°</span>
-                <span>Hum: {weatherData.current.humidity}%</span>
-                <span>Wind: {Math.round(weatherData.current.wind)}</span>
+              <div style={{ display: 'flex', gap: '3rem', fontSize: '2rem', opacity: 0.8, marginBottom: '1rem' }}>
+                <span>🌡️ {Math.round(weatherData.current.feelsLike)}°</span>
+                <span>💧 {weatherData.current.humidity}%</span>
+                <span>💨 {Math.round(weatherData.current.wind)}</span>
               </div>
 
               {/* Forecast Strip (Horizontal) */}
-              <div style={{
-                display: 'flex',
-                gap: '2rem',
-                width: '100%',
-                justifyContent: 'center',
-                borderTop: `1px solid ${fontColor}`,
-                paddingTop: '0.8rem',
-                opacity: 0.9
-              }}>
-                {weatherData.forecast.slice(0, 5).map((day: any, i: number) => (
-                  <div key={i} style={{ textAlign: 'center', minWidth: '70px' }}>
-                    <div style={{ fontSize: '1.4rem', opacity: 0.7 }}>{day.day}</div>
-                    <div style={{ fontSize: '2.2rem', margin: '0.2rem 0' }}>{day.icon}</div>
-                    <div style={{ fontSize: '1.8rem' }}>{Math.round(day.temp)}°</div>
-                  </div>
-                ))}
-              </div>
+              {forecastRange !== 'none' && (
+                <div style={{
+                  display: 'flex',
+                  gap: '2rem',
+                  width: '100%',
+                  justifyContent: 'center',
+                  borderTop: `1px solid ${fontColor}`,
+                  paddingTop: '0.8rem',
+                  opacity: 0.9
+                }}>
+                  {weatherData.forecast.slice(0, 5).map((day: any, i: number) => (
+                    <div key={i} className="weather-forecast-item" style={{ minWidth: '70px' }}>
+                      <div className="weather-forecast-day">{day.day}</div>
+                      <div className="weather-forecast-icon weather-icon-3d">{day.icon}</div>
+                      <div className="weather-forecast-temp">{Math.round(day.temp)}°</div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </>
         ) : (
@@ -491,7 +484,7 @@ export function Render() {
               justifyContent: 'center',
               gap: '4rem'
             }}>
-              <div style={{ fontSize: '12rem' }}>{weatherData.current.icon}</div>
+              <div className="weather-icon-3d" style={{ fontSize: '12rem' }}>{weatherData.current.icon}</div>
               <div>
                 <div style={{ fontSize: '10rem', lineHeight: 1 }}>
                   {Math.round(weatherData.current.temp)}{unitLabel}
@@ -509,28 +502,30 @@ export function Render() {
               opacity: 0.8,
               justifyContent: 'center'
             }}>
-              <span>Feels like: {Math.round(weatherData.current.feelsLike)}°</span>
-              <span>Humidity: {weatherData.current.humidity}%</span>
-              <span>Wind: {Math.round(weatherData.current.wind)} km/h {weatherData.current.windDir}</span>
-              <span>Precipitation: {weatherData.current.precip}%</span>
+              <span>🌡️ {Math.round(weatherData.current.feelsLike)}°</span>
+              <span>💧 {weatherData.current.humidity}%</span>
+              <span>💨 {Math.round(weatherData.current.wind)} {unit === 'imperial' ? 'mph' : 'km/h'} {weatherData.current.windDir}</span>
+              <span>🌧️ {weatherData.current.precip}%</span>
             </div>
 
             {/* Forecast Strip */}
-            <footer style={{
-              display: 'flex',
-              gap: '2rem',
-              borderTop: `1px solid ${fontColor}`,
-              paddingTop: '2rem',
-              overflow: 'hidden'
-            }}>
-              {weatherData.forecast.map((day: any, i: number) => (
-                <div key={i} style={{ flex: 1, textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.5rem', opacity: 0.7 }}>{day.day}</div>
-                  <div style={{ fontSize: '3rem' }}>{day.icon}</div>
-                  <div style={{ fontSize: '2rem' }}>{Math.round(day.temp)}°</div>
-                </div>
-              ))}
-            </footer>
+            {forecastRange !== 'none' && (
+              <footer style={{
+                display: 'flex',
+                gap: '2rem',
+                borderTop: `1px solid ${fontColor}`,
+                paddingTop: '2rem',
+                overflow: 'hidden'
+              }}>
+                {weatherData.forecast.map((day: any, i: number) => (
+                  <div key={i} className="weather-forecast-item" style={{ flex: 1 }}>
+                    <div className="weather-forecast-day">{day.day}</div>
+                    <div className="weather-forecast-icon weather-icon-3d">{day.icon}</div>
+                    <div className="weather-forecast-temp">{Math.round(day.temp)}°</div>
+                  </div>
+                ))}
+              </footer>
+            )}
           </>
         )}
       </div>

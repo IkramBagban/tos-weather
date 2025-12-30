@@ -223,6 +223,7 @@ export function Settings() {
             <option value="24h">24-Hour (Hourly)</option>
             <option value="3d">3-Day Forecast</option>
             <option value="7d">7-Day Forecast</option>
+            <option value="none">None</option>
           </select>
         </SettingsSelectFrame>
       </SettingsField>
