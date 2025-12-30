@@ -348,10 +348,10 @@ export function Settings() {
             onChange={(e) => setDateFormat(e.target.value)}
             disabled={isLoading}
           >
-            <option value="MMM DD, YYYY">MMM DD, YYYY (Jan 01, 2025)</option>
-            <option value="MM/DD/YYYY">MM/DD/YYYY (01/31/2025)</option>
-            <option value="DD/MM/YYYY">DD/MM/YYYY (31/01/2025)</option>
-            <option value="YYYY-MM-DD">YYYY-MM-DD (2025-01-31)</option>
+            <option value="MMM DD, YYYY">MMM DD, YYYY</option>
+            <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+            <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+            <option value="YYYY-MM-DD">YYYY-MM-DD</option>
           </select>
         </SettingsSelectFrame>
       </SettingsField>

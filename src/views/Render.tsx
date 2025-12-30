@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { proxy, store } from '@telemetryos/sdk';
+import { proxy, store, weather } from '@telemetryos/sdk';
 import { useUiScaleToSetRem } from '@telemetryos/sdk/react';
 import {
   useLocationsState,
@@ -22,7 +22,7 @@ import {
 const MOCK_WEATHER = {
   current: {
     temp: 22,
-    condition: 'Partly Cloudy',
+    condition: 'Cloudy',
     icon: '⛅',
     humidity: 45,
     wind: 12,
@@ -82,6 +82,15 @@ export function Render() {
     }, cycleDuration * 1000);
     return () => clearInterval(interval);
   }, [locations, cycleDuration]);
+
+  // API Probing
+  useEffect(() => {
+    console.log('--- SDK PROBE ---');
+    console.log('weather module:', weather);
+    console.log('weather.fetch:', weather?.fetch);
+    // console.log('useDeviceInfo hook result:', useDeviceInfo ? 'Function exists' : 'Undefined');
+    console.log('--- END PROBE ---');
+  }, []);
 
   // Mock Fetching Logic
   useEffect(() => {
@@ -161,16 +170,51 @@ export function Render() {
   };
   const unitLabel = unit === 'imperial' ? '°F' : '°C';
 
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Format Time
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: timeFormat === '12h',
+    });
+  };
+
+  // Format Date (Simple implementation, can be expanded for all formats)
+  const formatDate = (date: Date) => {
+    const options: Intl.DateTimeFormatOptions = {};
+    if (dateFormat === 'MMM DD, YYYY') { options.month = 'short'; options.day = '2-digit'; options.year = 'numeric'; }
+    else if (dateFormat === 'YYYY-MM-DD') { return date.toISOString().split('T')[0]; } // Simplified
+    else return date.toLocaleDateString(); // Fallback
+    return date.toLocaleDateString('en-US', options);
+  };
+
   if (!weather) return <div>Loading Weather...</div>;
 
   return (
     <div className="weather-app" style={containerStyle}>
       {renderBackground()}
 
-      {/* Header */}
-      <header style={{ fontSize: '3rem', fontWeight: 'bold' }}>
-        {displayName}
+      {/* Header with Location and TIME */}
+      <header style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '0 1rem'
+      }}>
+        <div style={{ fontSize: '3rem', fontWeight: 'bold' }}>{displayName}</div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '3rem', fontWeight: 'bold' }}>{formatTime(currentTime)}</div>
+          <div style={{ fontSize: '1.5rem', opacity: 0.8 }}>{formatDate(currentTime)}</div>
+        </div>
       </header>
+
 
       {/* Current Conditions (Main) */}
       <main style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '4rem' }}>
@@ -188,6 +232,7 @@ export function Render() {
         <span>Feels like: {displayTemp(weather.current.feelsLike)}°</span>
         <span>Humidity: {weather.current.humidity}%</span>
         <span>Wind: {weather.current.wind} km/h</span>
+        <span>Precipitation: {weather.current.precip}%</span>
       </div>
 
       {/* Forecast Strip */}
