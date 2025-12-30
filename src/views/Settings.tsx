@@ -81,18 +81,137 @@ export function Settings() {
     setLocations(newLocations);
   };
 
-  const pickMedia = async () => {
+  // Media Picker State
+  const [isMediaPickerOpen, setIsMediaPickerOpen] = React.useState(false);
+  const [mediaFolders, setMediaFolders] = React.useState<any[]>([]);
+  const [mediaFiles, setMediaFiles] = React.useState<any[]>([]);
+  const [currentFolderId, setCurrentFolderId] = React.useState<string | null>(null);
+  const [breadcrumbs, setBreadcrumbs] = React.useState<{ id: string | null, name: string }[]>([{ id: null, name: 'Root' }]);
+
+  // Fetch initial folders
+  React.useEffect(() => {
+    if (isMediaPickerOpen) {
+      loadFolder(currentFolderId);
+    }
+  }, [isMediaPickerOpen, currentFolderId]);
+
+  const loadFolder = async (folderId: string | null) => {
     try {
-      // @ts-ignore - Assuming media().pick() returns a promise with a selection
-      const result = await media().pick();
-      if (result && result.url) {
-        setBackgroundUrl(result.url);
-      } else if (typeof result === 'string') {
-        setBackgroundUrl(result);
+      if (!folderId) {
+        // Root: Get all folders
+        const folders = await media().getAllFolders();
+        // Filter for root folders (where parentId is null or empty if logic dictates, 
+        // SDK doc says getAllFolders returns all, we might need to filter client side or just show all folders flat if no hierarchy structure is strictly defined by API return for root?)
+        // The doc says "getAllFolders: Retrieve all media folders". "MediaFolder" has "parentId".
+        // Let's assume we show root folders (parentId === undefined/null) at root.
+        const rootFolders = folders.filter((f: any) => !f.parentId);
+        setMediaFolders(rootFolders);
+        setMediaFiles([]); // Root probably only has folders? Or maybe root has files too? 
+        // The API says "getAllByFolderId(folderId)". Root usually doesn't have an ID unless there's a specific root ID.
+        // If we want root files, maybe passing null works? Doc doesn't say. 
+        // Let's assume we start by showing folders.
+        // Actually, many systems have a flattened folder list or strict hierarchy.
+        // Let's just show ALL folders if hierarchy is complex, or filter.
+        // To be safe, let's just show folders.
+      } else {
+        // Get content
+        const [contents, allFolders] = await Promise.all([
+          media().getAllByFolderId(folderId),
+          media().getAllFolders()
+        ]);
+        setMediaFiles(contents);
+        // Find subfolders
+        const subFolders = allFolders.filter((f: any) => f.parentId === folderId);
+        setMediaFolders(subFolders);
       }
     } catch (e) {
-      console.error('Media picker failed', e);
+      console.error('Failed to load media', e);
     }
+  };
+
+  const navigateToFolder = (folder: any) => {
+    setCurrentFolderId(folder.id);
+    setBreadcrumbs([...breadcrumbs, { id: folder.id, name: folder.name }]);
+  };
+
+  const navigateUp = (index: number) => {
+    const target = breadcrumbs[index];
+    setCurrentFolderId(target.id);
+    setBreadcrumbs(breadcrumbs.slice(0, index + 1));
+  };
+
+  const selectFile = (file: any) => {
+    if (file.publicUrls && file.publicUrls.length > 0) {
+      setBackgroundUrl(file.publicUrls[0]);
+      setIsMediaPickerOpen(false);
+    }
+  };
+
+  // Render Media Picker Modal
+  const renderMediaPicker = () => {
+    if (!isMediaPickerOpen) return null;
+
+    return (
+      <div style={{
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 9999,
+        display: 'flex', justifyContent: 'center', alignItems: 'center'
+      }}>
+        <div style={{
+          backgroundColor: '#1a1a1a', color: 'white', width: '80%', height: '80%',
+          borderRadius: '1rem', padding: '2rem', display: 'flex', flexDirection: 'column',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+            <h2 style={{ fontSize: '2rem', margin: 0 }}>Media Library</h2>
+            <button onClick={() => setIsMediaPickerOpen(false)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '2rem', cursor: 'pointer' }}>✕</button>
+          </div>
+
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', fontSize: '1.4rem' }}>
+            {breadcrumbs.map((crumb, i) => (
+              <span key={i} onClick={() => navigateUp(i)} style={{ cursor: 'pointer', textDecoration: i === breadcrumbs.length - 1 ? 'none' : 'underline', opacity: i === breadcrumbs.length - 1 ? 1 : 0.7 }}>
+                {crumb.name} {i < breadcrumbs.length - 1 && ' > '}
+              </span>
+            ))}
+          </div>
+
+          <div style={{ flex: 1, overflowY: 'auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem', alignContent: 'start' }}>
+            {/* Folders */}
+            {mediaFolders.map(folder => (
+              <div key={folder.id} onClick={() => navigateToFolder(folder)} style={{
+                backgroundColor: '#333', padding: '1rem', borderRadius: '0.5rem',
+                cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                aspectRatio: '1'
+              }}>
+                <div style={{ fontSize: '3rem' }}>📁</div>
+                <div style={{ textAlign: 'center', wordBreak: 'break-word', marginTop: '0.5rem' }}>{folder.name}</div>
+              </div>
+            ))}
+
+            {/* Files */}
+            {mediaFiles.map(file => (
+              <div key={file.id} onClick={() => selectFile(file)} style={{
+                backgroundColor: '#333', padding: '0.5rem', borderRadius: '0.5rem',
+                cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center',
+                border: backgroundUrl === file.publicUrls?.[0] ? '2px solid #4facfe' : 'none',
+                position: 'relative'
+              }}>
+                {file.contentType.startsWith('video') ? (
+                  <div style={{ fontSize: '3rem', height: '100px', display: 'flex', alignItems: 'center' }}>🎥</div>
+                ) : (
+                  <img src={file.thumbnailUrl || file.publicUrls?.[0]} alt={file.name} style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '0.2rem' }} />
+                )}
+                <div style={{ textAlign: 'center', fontSize: '1.2rem', marginTop: '0.5rem', width: '100%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{file.name}</div>
+              </div>
+            ))}
+
+            {mediaFolders.length === 0 && mediaFiles.length === 0 && (
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem', opacity: 0.5 }}>This folder is empty</div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -114,7 +233,7 @@ export function Settings() {
                   type="radio"
                   checked={loc.type === 'manual'}
                   onChange={() => updateLocation(index, { type: 'manual' })}
-                  
+
                 />
                 <SettingsRadioLabel>Manual</SettingsRadioLabel>
               </SettingsRadioFrame>
@@ -123,7 +242,7 @@ export function Settings() {
                   type="radio"
                   checked={loc.type === 'auto'}
                   onChange={() => updateLocation(index, { type: 'auto' })}
-                  
+
                 />
                 <SettingsRadioLabel>Auto (Device)</SettingsRadioLabel>
               </SettingsRadioFrame>
@@ -142,7 +261,7 @@ export function Settings() {
                   onChange={(e) => {
                     updateLocation(index, { city: e.target.value });
                   }}
-                  
+
                 />
               </SettingsInputFrame>
               <SettingsHint>Enter city name or zip code.</SettingsHint>
@@ -158,7 +277,7 @@ export function Settings() {
                 placeholder="e.g. Main Lobby (Optional)"
                 value={loc.label || ''}
                 onChange={(e) => updateLocation(index, { label: e.target.value })}
-                
+
               />
             </SettingsInputFrame>
             <SettingsHint>Overrides the API-provided location name.</SettingsHint>
@@ -185,7 +304,7 @@ export function Settings() {
             max="60"
             value={cycleDuration}
             onChange={(e) => setCycleDuration(Number(e.target.value))}
-            
+
           />
           <span>{cycleDuration}s</span>
         </SettingsSliderFrame>
@@ -197,7 +316,7 @@ export function Settings() {
           <select
             value={transition}
             onChange={(e) => setTransition(e.target.value)}
-            
+
           >
             <option value="fade">Fade</option>
             <option value="slide">Slide</option>
@@ -217,7 +336,7 @@ export function Settings() {
           <select
             value={forecastRange}
             onChange={(e) => setForecastRange(e.target.value)}
-            
+
           >
             <option value="24h">24-Hour (Hourly)</option>
             <option value="3d">3-Day Forecast</option>
@@ -237,7 +356,7 @@ export function Settings() {
             step="0.1"
             value={uiScale}
             onChange={(e) => setUiScale(Number(e.target.value))}
-            
+
           />
           <span>{uiScale}x</span>
         </SettingsSliderFrame>
@@ -254,7 +373,7 @@ export function Settings() {
           <select
             value={backgroundType}
             onChange={(e) => setBackgroundType(e.target.value)}
-            
+
           >
             <option value="dynamic">Dynamic (Matches Weather)</option>
             <option value="solid">Solid Color</option>
@@ -271,7 +390,7 @@ export function Settings() {
               type="color"
               value={backgroundColor}
               onChange={(e) => setBackgroundColor(e.target.value)}
-              
+
             />
             <span>{backgroundColor}</span>
           </SettingsColorFrame>
@@ -285,11 +404,13 @@ export function Settings() {
             <input type="text" value={backgroundUrl} disabled readOnly placeholder="Select media..." />
           </SettingsInputFrame>
           <SettingsButtonFrame>
-            <button onClick={pickMedia} >Choose from Library</button>
+            <button onClick={() => setIsMediaPickerOpen(true)} >Choose from Library</button>
             {backgroundUrl && <button onClick={() => setBackgroundUrl('')}>Clear</button>}
           </SettingsButtonFrame>
         </SettingsField>
       )}
+
+      {renderMediaPicker()}
 
       <SettingsField>
         <SettingsLabel>Background Opacity</SettingsLabel>
@@ -300,7 +421,7 @@ export function Settings() {
             max="100"
             value={backgroundOpacity}
             onChange={(e) => setBackgroundOpacity(Number(e.target.value))}
-            
+
           />
           <span>{backgroundOpacity}%</span>
         </SettingsSliderFrame>
@@ -313,7 +434,7 @@ export function Settings() {
             type="color"
             value={fontColor}
             onChange={(e) => setFontColor(e.target.value)}
-            
+
           />
           <span>{fontColor}</span>
         </SettingsColorFrame>
@@ -332,7 +453,7 @@ export function Settings() {
               type="radio"
               checked={unit === 'metric'}
               onChange={() => setUnit('metric')}
-              
+
             />
             <SettingsRadioLabel>Celsius (°C)</SettingsRadioLabel>
           </SettingsRadioFrame>
@@ -341,7 +462,7 @@ export function Settings() {
               type="radio"
               checked={unit === 'imperial'}
               onChange={() => setUnit('imperial')}
-              
+
             />
             <SettingsRadioLabel>Fahrenheit (°F)</SettingsRadioLabel>
           </SettingsRadioFrame>
@@ -354,7 +475,7 @@ export function Settings() {
           <select
             value={timeFormat}
             onChange={(e) => setTimeFormat(e.target.value)}
-            
+
           >
             <option value="12h">12-Hour (AM/PM)</option>
             <option value="24h">24-Hour</option>
@@ -368,7 +489,7 @@ export function Settings() {
           <select
             value={dateFormat}
             onChange={(e) => setDateFormat(e.target.value)}
-            
+
           >
             <option value="MMM DD, YYYY">MMM DD, YYYY</option>
             <option value="MM/DD/YYYY">MM/DD/YYYY</option>
