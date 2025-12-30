@@ -343,9 +343,64 @@ export function Render() {
     return date.toLocaleDateString('en-US', options);
   };
 
-  if (loading && !weatherData) return <div style={{ ...containerStyle, justifyContent: 'center', alignItems: 'center', fontSize: '3rem' }}>Loading Weather...</div>;
-  if (error) return <div style={{ ...containerStyle, justifyContent: 'center', alignItems: 'center', fontSize: '3rem' }}>{error}</div>;
-  if (!weatherData) return <div style={{ ...containerStyle, justifyContent: 'center', alignItems: 'center', fontSize: '3rem' }}>Configure Locations in Settings</div>;
+  if (loading && !weatherData) {
+    return (
+      <div style={{ ...containerStyle, justifyContent: 'center', alignItems: 'center', flexDirection: 'column', gap: '2rem' }}>
+        <div style={{ fontSize: '3rem' }}>Loading Weather...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ ...containerStyle, justifyContent: 'center', alignItems: 'center', flexDirection: 'column', gap: '2rem' }}>
+        <div style={{ fontSize: '3rem', color: '#ff6b6b' }}>Error: {error}</div>
+        <button
+          onClick={() => {
+            setLoading(true);
+            const loc = locations[currentIndex];
+            if (loc) {
+              getWeatherData(loc).then(data => {
+                if (data) {
+                  setWeatherData(data);
+                  setError(null);
+                } else {
+                  setError('Retry failed. Please check connection.');
+                }
+                setLoading(false);
+              });
+            } else {
+              // Should not happen if locations exist
+              setError('No location configuration found.');
+              setLoading(false);
+            }
+          }}
+          style={{
+            fontSize: '2rem',
+            padding: '1rem 3rem',
+            borderRadius: '1rem',
+            border: 'none',
+            background: 'white',
+            color: 'black',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+          }}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (!weatherData) {
+    return (
+      <div style={{ ...containerStyle, justifyContent: 'center', alignItems: 'center', flexDirection: 'column', gap: '2rem', textAlign: 'center' }}>
+        <div style={{ fontSize: '3rem', fontWeight: 'bold' }}>Welcome to Weather Widget!</div>
+        <div style={{ fontSize: '2rem', opacity: 0.8 }}>No locations configured.</div>
+        <div style={{ fontSize: '2rem', opacity: 0.8 }}>Please add a location in the settings to get started.</div>
+      </div>
+    );
+  }
 
   return (
     <div className="weather-app" style={containerStyle}>
