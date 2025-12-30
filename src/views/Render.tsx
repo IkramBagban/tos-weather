@@ -120,8 +120,8 @@ export function Render() {
           icon: getIcon(current.WeatherText),
           humidity: current.RelativeHumidity,
           wind: current.WindSpeed,
-          windDir: current.WindDirectionEnglish || '', // Keeping API units
-          feelsLike: current.Temp, // Using Temp as fallback
+          windDir: current.WindDirectionEnglish || '',
+          feelsLike: current.Temp,
           precip: current.Precip,
           timezone: current.Timezone,
           city: current.CityLocalized || current.CityEnglish,
@@ -145,8 +145,18 @@ export function Render() {
 
     // Cycle index
     const interval = setInterval(() => {
-      if (transition === 'none') {
+      // Fix: 'none' isn't an option, 'instant' is.
+      if (transition === 'instant') {
         setCurrentIndex((prev) => (prev + 1) % locations.length);
+      } else {
+        // Start Fade Out
+        setVisible(false);
+        setTimeout(() => {
+          // Force Loading state to prevent immediate re-show
+          setLoading(true);
+          // Update Index (Data Fetch triggers)
+          setCurrentIndex((prev) => (prev + 1) % locations.length);
+        }, 500);
       }
     }, cycleDuration * 1000);
 
@@ -155,31 +165,22 @@ export function Render() {
 
   // Transition Logic
   const [visible, setVisible] = useState(true);
+
+  // Fix: Show content only when new data is ready (loading finishes)
   useEffect(() => {
-    if (!locations || locations.length <= 1) return;
-    // Cycle index
-    const interval = setInterval(() => {
-      if (transition === 'none') {
-        setCurrentIndex((prev) => (prev + 1) % locations.length);
-      } else {
-        setVisible(false);
-        setTimeout(() => {
-          setCurrentIndex((prev) => (prev + 1) % locations.length);
-          setVisible(true);
-        }, 500);
-      }
-    }, cycleDuration * 1000);
-    return () => clearInterval(interval);
-  }, [locations, cycleDuration, transition]);
+    if (!loading && !visible) {
+      setVisible(true);
+    }
+  }, [loading, visible]);
 
   const getTransitionStyle = (): React.CSSProperties => {
-    if (transition === 'none') return {};
+    if (transition === 'instant') return {}; // Correctly handle instant
     const base: React.CSSProperties = {
       transition: 'all 0.5s ease-in-out',
       opacity: visible ? 1 : 0,
     };
     if (transition === 'slide') {
-      return { ...base, transform: visible ? 'translateX(0)' : 'translateX(-20px)' };
+      return { ...base, transform: visible ? 'translateX(0)' : 'translateX(-100px)' };
     }
     return base; // fade
   };
@@ -238,7 +239,7 @@ export function Render() {
       height: '100%',
       zIndex: -1,
       opacity: opacityValue,
-      transition: 'all 0.5s ease',
+      transition: transition === 'instant' ? 'none' : 'all 0.5s ease',
     };
 
     if (bgType === 'image' && bgUrl) {
@@ -277,7 +278,6 @@ export function Render() {
   }, []);
 
 
-  // Format Time (Timezone aware)
   const formatTime = (date: Date) => {
     const timeZone = weatherData?.current?.timezone;
     try {
@@ -296,7 +296,6 @@ export function Render() {
     }
   };
 
-  // Format Date (Timezone aware)
   const formatDate = (date: Date) => {
     const timeZone = weatherData?.current?.timezone;
     const options: Intl.DateTimeFormatOptions = {
@@ -333,16 +332,14 @@ export function Render() {
         {isExtremeRibbon ? (
           // EXTREME RIBBON LAYOUT (> 3.5)
           <>
-            {/* anchored headers */}
             <div style={{ position: 'absolute', top: '1rem', left: '2rem', fontSize: '2.5rem', fontWeight: 'bold', zIndex: 10 }}>
-              {weatherData.current.city || displayName}
+              {currentLocation.label || weatherData.current.city || displayName}
             </div>
             <div style={{ position: 'absolute', top: '1rem', right: '2rem', textAlign: 'right', zIndex: 10 }}>
               <div style={{ fontSize: '3rem', fontWeight: 'bold', lineHeight: 1 }}>{formatTime(currentTime)}</div>
               <div style={{ fontSize: '1.5rem', opacity: 0.8 }}>{formatDate(currentTime)}</div>
             </div>
 
-            {/* Main Content Area - Horizontal Centered */}
             <div style={{
               flex: 1,
               display: 'flex',
@@ -351,10 +348,9 @@ export function Render() {
               justifyContent: 'space-between',
               padding: '0 4rem',
               width: '100%',
-              marginTop: '2rem' /* clear headers */
+              marginTop: '2rem'
             }}>
 
-              {/* Current Weather - Horizontal */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
                 <div className="weather-icon-3d" style={{ fontSize: '9rem' }}>{weatherData.current.icon}</div>
                 <div style={{ textAlign: 'left' }}>
@@ -365,7 +361,6 @@ export function Render() {
                     {weatherData.current.condition}
                   </div>
                 </div>
-                {/* Metrics integrated nicely */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '1.6rem', opacity: 0.8, marginLeft: '3rem', justifyContent: 'center' }}>
                   <span>🌡️ {Math.round(weatherData.current.feelsLike)}°</span>
                   <span>💧 {weatherData.current.humidity}%</span>
@@ -373,10 +368,10 @@ export function Render() {
                 </div>
               </div>
 
-              {/* Forecast - Compact Horizontal on Right */}
+              {/* FORECAST: REMOVED SLICE LIMIT */}
               {forecastRange !== 'none' && (
                 <div style={{ display: 'flex', gap: '2rem' }}>
-                  {weatherData.forecast.slice(0, 5).map((day: any, i: number) => (
+                  {weatherData.forecast.map((day: any, i: number) => (
                     <div key={i} className="weather-forecast-item" style={{ minWidth: '70px' }}>
                       <div className="weather-forecast-day">{day.day}</div>
                       <div className="weather-forecast-icon weather-icon-3d">{day.icon}</div>
@@ -391,7 +386,6 @@ export function Render() {
         ) : isLandscapeRibbon ? (
           // RIBBON LAYOUT (Split Left/Right)
           <>
-            {/* Left Panel: Context (City, Time, Date) */}
             <div style={{
               flex: 1,
               display: 'flex',
@@ -403,7 +397,7 @@ export function Render() {
               opacity: 0.9
             }}>
               <div style={{ fontSize: '3rem', fontWeight: 'bold', marginBottom: '0.5rem', lineHeight: 1.1 }}>
-                {weatherData.current.city || displayName}
+                {currentLocation.label || weatherData.current.city || displayName}
               </div>
               <div style={{ fontSize: '5.5rem', fontWeight: 'bold', lineHeight: 1 }}>
                 {formatTime(currentTime)}
@@ -413,7 +407,6 @@ export function Render() {
               </div>
             </div>
 
-            {/* Right Panel: Weather Data & Forecast */}
             <div style={{
               flex: 1.8,
               display: 'flex',
@@ -422,7 +415,6 @@ export function Render() {
               paddingRight: '3rem',
               alignItems: 'center'
             }}>
-              {/* Current Weather - HERO */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '4rem', marginBottom: '1rem' }}>
                 <div className="weather-icon-3d" style={{ fontSize: '10rem' }}>{weatherData.current.icon}</div>
                 <div style={{ textAlign: 'left' }}>
@@ -435,14 +427,13 @@ export function Render() {
                 </div>
               </div>
 
-              {/* Secondary Metrics (Horizontal) - Condensed */}
               <div style={{ display: 'flex', gap: '3rem', fontSize: '2rem', opacity: 0.8, marginBottom: '1rem' }}>
                 <span>🌡️ {Math.round(weatherData.current.feelsLike)}°</span>
                 <span>💧 {weatherData.current.humidity}%</span>
                 <span>💨 {Math.round(weatherData.current.wind)}</span>
               </div>
 
-              {/* Forecast Strip (Horizontal) */}
+              {/* FORECAST: REMOVED SLICE LIMIT */}
               {forecastRange !== 'none' && (
                 <div style={{
                   display: 'flex',
@@ -453,7 +444,7 @@ export function Render() {
                   paddingTop: '0.8rem',
                   opacity: 0.9
                 }}>
-                  {weatherData.forecast.slice(0, 5).map((day: any, i: number) => (
+                  {weatherData.forecast.map((day: any, i: number) => (
                     <div key={i} className="weather-forecast-item" style={{ minWidth: '70px' }}>
                       <div className="weather-forecast-day">{day.day}</div>
                       <div className="weather-forecast-icon weather-icon-3d">{day.icon}</div>
@@ -467,16 +458,14 @@ export function Render() {
         ) : (
           // STANDARD LAYOUT (Original)
           <>
-            {/* Header with Location and TIME */}
             <header style={headerStyle}>
-              <div style={{ fontSize: '3rem', fontWeight: 'bold' }}>{weatherData.current.city || displayName}</div>
+              <div style={{ fontSize: '3rem', fontWeight: 'bold' }}>{currentLocation.label || weatherData.current.city || displayName}</div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: '3rem', fontWeight: 'bold' }}>{formatTime(currentTime)}</div>
                 <div style={{ fontSize: '1.5rem', opacity: 0.8 }}>{formatDate(currentTime)}</div>
               </div>
             </header>
 
-            {/* Current Conditions (Main) */}
             <main style={{
               flex: 2,
               display: 'flex',
@@ -493,7 +482,6 @@ export function Render() {
               </div>
             </main>
 
-            {/* Secondary Data Strip */}
             <div style={{
               display: 'flex',
               gap: '4rem',
@@ -508,7 +496,6 @@ export function Render() {
               <span>🌧️ {weatherData.current.precip}%</span>
             </div>
 
-            {/* Forecast Strip */}
             {forecastRange !== 'none' && (
               <footer style={{
                 display: 'flex',
