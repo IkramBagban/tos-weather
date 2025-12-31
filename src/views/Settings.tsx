@@ -143,9 +143,17 @@ export function Settings() {
   };
 
   const selectFile = (file: any) => {
-    if (file.publicUrls && file.publicUrls.length > 0) {
-      setBackgroundUrl(file.publicUrls[0]);
+    // Try to get a valid URL
+    const url = file.publicUrls?.[0] || file.url;
+    
+    if (url) {
+      console.log('Selected Media:', file.name, url);
+      setBackgroundUrl(url);
       setIsMediaPickerOpen(false);
+    } else {
+      console.error('Selected file has no valid URL:', file);
+      // Optional: Show a toast/alert or just fallback?
+      // For now, let's at least log it so we know why it failed.
     }
   };
 
