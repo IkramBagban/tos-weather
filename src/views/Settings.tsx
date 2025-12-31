@@ -156,59 +156,190 @@ export function Settings() {
     return (
       <div style={{
         position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 9999,
-        display: 'flex', justifyContent: 'center', alignItems: 'center'
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        backdropFilter: 'blur(5px)',
+        zIndex: 9999,
+        display: 'flex', justifyContent: 'center', alignItems: 'center',
+        animation: 'fadeIn 0.2s ease-out'
       }}>
         <div style={{
-          backgroundColor: '#1a1a1a', color: 'white', width: '80%', height: '80%',
-          borderRadius: '1rem', padding: '2rem', display: 'flex', flexDirection: 'column',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
+          backgroundColor: '#222',
+          color: '#eee',
+          width: '90%',
+          maxWidth: '1200px',
+          height: '85%',
+          borderRadius: '12px',
+          display: 'flex',
+          flexDirection: 'column',
+          boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
+          border: '1px solid #333',
+          overflow: 'hidden'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-            <h2 style={{ fontSize: '2rem', margin: 0 }}>Media Library</h2>
-            <button onClick={() => setIsMediaPickerOpen(false)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '2rem', cursor: 'pointer' }}>✕</button>
+          {/* Header */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '1.5rem 2rem',
+            borderBottom: '1px solid #333',
+            backgroundColor: '#1a1a1a'
+          }}>
+            <h2 style={{ fontSize: '1.8rem', margin: 0, fontWeight: 600 }}>Media Library</h2>
+            <button
+              onClick={() => setIsMediaPickerOpen(false)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#aaa',
+                fontSize: '2rem',
+                cursor: 'pointer',
+                padding: '0.5rem',
+                lineHeight: 1,
+                borderRadius: '50%',
+                transition: 'color 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#fff'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#aaa'}
+            >
+              ✕
+            </button>
           </div>
 
-          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', fontSize: '1.4rem' }}>
+          {/* Breadcrumbs */}
+          <div style={{
+            display: 'flex',
+            gap: '0.5rem',
+            padding: '1rem 2rem',
+            fontSize: '1.4rem',
+            backgroundColor: '#1f1f1f',
+            borderBottom: '1px solid #333',
+            alignItems: 'center'
+          }}>
+            <span style={{ marginRight: '0.5rem' }}>📂</span>
             {breadcrumbs.map((crumb, i) => (
-              <span key={i} onClick={() => navigateUp(i)} style={{ cursor: 'pointer', textDecoration: i === breadcrumbs.length - 1 ? 'none' : 'underline', opacity: i === breadcrumbs.length - 1 ? 1 : 0.7 }}>
-                {crumb.name} {i < breadcrumbs.length - 1 && ' > '}
-              </span>
+              <React.Fragment key={i}>
+                <span
+                  onClick={() => navigateUp(i)}
+                  style={{
+                    cursor: 'pointer',
+                    color: i === breadcrumbs.length - 1 ? '#fff' : '#4facfe',
+                    fontWeight: i === breadcrumbs.length - 1 ? 600 : 400
+                  }}
+                >
+                  {crumb.name}
+                </span>
+                {i < breadcrumbs.length - 1 && <span style={{ color: '#666' }}>/</span>}
+              </React.Fragment>
             ))}
           </div>
 
-          <div style={{ flex: 1, overflowY: 'auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem', alignContent: 'start' }}>
-            {/* Folders */}
+          {/* Content Grid */}
+          <div style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '2rem',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+            gap: '1.5rem',
+            alignContent: 'start',
+            backgroundColor: '#121212'
+          }}>
+
+            {/* Folder Items */}
             {mediaFolders.map(folder => (
               <div key={folder.id} onClick={() => navigateToFolder(folder)} style={{
-                backgroundColor: '#333', padding: '1rem', borderRadius: '0.5rem',
-                cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                aspectRatio: '1'
-              }}>
-                <div style={{ fontSize: '3rem' }}>📁</div>
-                <div style={{ textAlign: 'center', wordBreak: 'break-word', marginTop: '0.5rem' }}>{folder.name}</div>
+                backgroundColor: '#2a2a2a',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                aspectRatio: '1',
+                padding: '1rem',
+                border: '1px solid #333',
+                transition: 'transform 0.1s, background-color 0.1s'
+              }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.backgroundColor = '#333'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.backgroundColor = '#2a2a2a'; }}
+              >
+                <div style={{ fontSize: '4rem', marginBottom: '0.5rem' }}>📁</div>
+                <div style={{ textAlign: 'center', wordBreak: 'break-word', fontSize: '1.2rem', color: '#ddd' }}>{folder.name}</div>
               </div>
             ))}
 
-            {/* Files */}
-            {mediaFiles.map(file => (
-              <div key={file.id} onClick={() => selectFile(file)} style={{
-                backgroundColor: '#333', padding: '0.5rem', borderRadius: '0.5rem',
-                cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center',
-                border: backgroundUrl === file.publicUrls?.[0] ? '2px solid #4facfe' : 'none',
-                position: 'relative'
-              }}>
-                {file.contentType.startsWith('video') ? (
-                  <div style={{ fontSize: '3rem', height: '100px', display: 'flex', alignItems: 'center' }}>🎥</div>
-                ) : (
-                  <img src={file.thumbnailUrl || file.publicUrls?.[0]} alt={file.name} style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '0.2rem' }} />
-                )}
-                <div style={{ textAlign: 'center', fontSize: '1.2rem', marginTop: '0.5rem', width: '100%', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{file.name}</div>
-              </div>
-            ))}
+            {/* File Items */}
+            {mediaFiles.map(file => {
+              const fileUrl = file.thumbnailUrl || file.publicUrls?.[0] || file.url;
+              const isSelected = backgroundUrl === (file.publicUrls?.[0] || file.url);
+
+              return (
+                <div key={file.id} onClick={() => selectFile(file)} style={{
+                  backgroundColor: '#2a2a2a',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
+                  border: isSelected ? '2px solid #4facfe' : '1px solid #333',
+                  position: 'relative',
+                  aspectRatio: '1',
+                  transition: 'transform 0.1s'
+                }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                  <div style={{ flex: 1, width: '100%', overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
+                    {file.contentType?.startsWith('video') ? (
+                      <div style={{ fontSize: '3rem' }}>🎥</div>
+                    ) : fileUrl ? (
+                      <img
+                        src={fileUrl}
+                        alt={file.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          // Show fallback (parent will show background color, maybe we insert an icon via sibling?)
+                          // Setting a sibling via JS is hard here, better to have a fallback structure.
+                          // Actually, create a fallback element that shows if img is hidden?
+                          // For simplicity, let's keep it simple: if error, hide img.
+                          // The container black background will show.
+                        }}
+                      />
+                    ) : (
+                      <div style={{ fontSize: '3rem' }}>🖼️</div>
+                    )}
+                  </div>
+
+                  <div style={{
+                    padding: '0.8rem 0.5rem',
+                    textAlign: 'center',
+                    fontSize: '1.1rem',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    backgroundColor: '#1f1f1f',
+                    width: '100%',
+                    borderTop: '1px solid #333'
+                  }}>
+                    {file.name}
+                  </div>
+
+                  {isSelected && (
+                    <div style={{
+                      position: 'absolute', top: '5px', right: '5px',
+                      backgroundColor: '#4facfe', borderRadius: '50%', width: '20px', height: '20px',
+                      display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '12px', color: 'white'
+                    }}>✓</div>
+                  )}
+                </div>
+              );
+            })}
 
             {mediaFolders.length === 0 && mediaFiles.length === 0 && (
-              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem', opacity: 0.5 }}>This folder is empty</div>
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem', opacity: 0.5, fontSize: '1.5rem' }}>
+                This folder is empty
+              </div>
             )}
           </div>
         </div>
@@ -417,7 +548,12 @@ export function Settings() {
         <SettingsField>
           <SettingsLabel>Background Media</SettingsLabel>
           <SettingsInputFrame>
-            <input type="text" value={backgroundUrl} disabled readOnly placeholder="Select media..." />
+            <input
+              type="text"
+              value={backgroundUrl}
+              onChange={(e) => setBackgroundUrl(e.target.value)}
+              placeholder="Select media or enter URL..."
+            />
           </SettingsInputFrame>
           <SettingsButtonFrame>
             <button onClick={() => setIsMediaPickerOpen(true)} >Choose from Library</button>

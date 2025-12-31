@@ -273,6 +273,13 @@ export function Render() {
   const currentCondition = weatherData?.current?.condition || '';
   const opacityValue = (bgOpacity ?? 100) / 100;
 
+  const [bgError, setBgError] = useState(false);
+
+  // Reset error when URL changes
+  useEffect(() => {
+    setBgError(false);
+  }, [bgUrl]);
+
   // Background Rendering Logic
   const renderBackground = () => {
     const commonStyle: React.CSSProperties = {
@@ -284,33 +291,33 @@ export function Render() {
       zIndex: -1,
       opacity: opacityValue,
       transition: transition === 'instant' ? 'none' : 'all 0.5s ease',
+      objectFit: 'cover'
     };
 
-    if (bgType === 'image' && bgUrl) {
+    if (bgType === 'image' && bgUrl && !bgError) {
       if (isVideo(bgUrl)) {
         return (
           <video
             src={bgUrl}
             autoPlay loop muted playsInline
-            style={{ ...commonStyle, objectFit: 'cover' }}
+            style={commonStyle}
+            onError={() => setBgError(true)}
           />
         );
       }
       return (
-        <div
-          style={{
-            ...commonStyle,
-            backgroundImage: `url(${bgUrl})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
+        <img
+          src={bgUrl}
+          alt="Background"
+          style={commonStyle}
+          onError={() => setBgError(true)}
         />
       );
     }
     if (bgType === 'solid') {
       return <div style={{ ...commonStyle, backgroundColor: bgColor }} />;
     }
-    // Dynamic
+    // Dynamic (Default or Fallback)
     return <div style={{ ...commonStyle, background: getDynamicBackground(currentCondition) }} />;
   };
 
