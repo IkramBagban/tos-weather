@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@telemetryos/sdk": "^1.8.0",
+    "lucide-react": "^0.562.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router": "^7.9.1"

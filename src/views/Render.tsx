@@ -1,6 +1,11 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { proxy, store, weather } from '@telemetryos/sdk';
 import { useUiScaleToSetRem, useUiAspectRatio } from '@telemetryos/sdk/react';
+import {
+  Sun, Cloud, CloudRain, CloudLightning, Snowflake, CloudFog, CloudSun,
+  Thermometer, Droplets, Wind, CloudDrizzle, Ban, MapPin
+} from 'lucide-react';
 import {
   useLocationsState,
   useCycleDurationState,
@@ -30,22 +35,56 @@ const getDynamicBackground = (condition: string): string => {
   return 'linear-gradient(to bottom, #30cfd0 0%, #330867 100%)'; // Default
 };
 
+const getDynamicBackgroundImage = (condition: string): string => {
+  const c = condition.toLowerCase();
+
+  if (c.includes('storm') || c.includes('thunder')) return './lightning-strike-cloudy-sky-night-time.jpg';
+  if (c.includes('rain') || c.includes('drizzle')) return './light-moderate-rain.jpg';
+  if (c.includes('snow') || c.includes('flurry') || c.includes('ice') || c.includes('sleet')) return './snow.jpg';
+  if (c.includes('overcast')) return './overcast-cloud.jpg';
+  if (c.includes('broken clouds')) return './broken-cloud.jpg';
+  if (c.includes('scattered clouds')) return './scattered-clouds.jpg';
+  if (c.includes('few clouds')) return './few-cloud.jpg';
+  if (c.includes('cloud')) return './overcast-cloud.jpg'; // Generic cloud fallback
+  if (c.includes('clear') || c.includes('sun')) return './clear-sky.jpg';
+  if (c.includes('mist') || c.includes('fog')) return './overcast-cloud.jpg'; // Use overcast for mist/fog if no specific image
+
+  return './summer-grass-beautiful-day.jpg'; // Default
+};
+
 const isVideo = (url: string) => {
   if (!url) return false;
   return url.match(/\.(mp4|webm|ogg|mov)$/i);
 };
 
-const getIcon = (condition: string): string => {
-  if (!condition) return '❓';
+const getIconKey = (condition: string): string => {
+  if (!condition) return 'question';
   const c = condition.toLowerCase();
-  if (c.includes('storm') || c.includes('thunder')) return '⛈️';
-  if (c.includes('rain') || c.includes('drizzle')) return '🌧️';
-  if (c.includes('snow') || c.includes('flurry')) return '❄️';
-  if (c.includes('fog') || c.includes('mist')) return '🌫️';
-  if (c.includes('cloud') || c.includes('overcast')) return '☁️';
-  if (c.includes('partly')) return '⛅';
-  if (c.includes('clear') || c.includes('sun')) return '☀️';
-  return '🌡️';
+  if (c.includes('storm') || c.includes('thunder')) return 'storm';
+  if (c.includes('rain') || c.includes('drizzle')) return 'rain';
+  if (c.includes('snow') || c.includes('flurry')) return 'snow';
+  if (c.includes('fog') || c.includes('mist')) return 'fog';
+  if (c.includes('cloud') || c.includes('overcast')) return 'cloud';
+  if (c.includes('partly')) return 'partly';
+  if (c.includes('clear') || c.includes('sun')) return 'sun';
+  return 'thermometer';
+};
+
+const WeatherIcon = ({ icon, size = '100%', className }: { icon: string; size?: string | number, className?: string }) => {
+  const props = { size, className, strokeWidth: 1.5 }; // Consistent stroke
+  switch (icon) {
+    case 'storm': return <CloudLightning {...props} />;
+    case 'rain': return <CloudRain {...props} />;
+    case 'snow': return <Snowflake {...props} />;
+    case 'fog': return <CloudFog {...props} />;
+    case 'cloud': return <Cloud {...props} />;
+    case 'partly': return <CloudSun {...props} />;
+    case 'sun': return <Sun {...props} />;
+    case 'thermometer': return <Thermometer {...props} />;
+    case 'droplet': return <Droplets {...props} />;
+    case 'wind': return <Wind {...props} />;
+    default: return <Ban {...props} />;
+  }
 };
 
 export function Render() {
@@ -119,7 +158,7 @@ export function Render() {
         current: {
           temp: current.Temp,
           condition: current.WeatherText,
-          icon: getIcon(current.WeatherText),
+          icon: getIconKey(current.WeatherText),
           humidity: current.RelativeHumidity,
           wind: current.WindSpeed,
           windDir: current.WindDirectionEnglish || '',
@@ -130,7 +169,7 @@ export function Render() {
         },
         forecast: forecast.map((f: any) => ({
           ...f,
-          icon: getIcon(f.icon)
+          icon: getIconKey(f.icon)
         }))
       };
     } catch (err) {
@@ -187,8 +226,8 @@ export function Render() {
     if (!weatherData || !locations || locations.length === 0) return;
 
     const refreshCurrent = async () => {
-      // Don't set global loading true here to avoid full screen flicker, 
-      // but we could if we wanted to show it's updating. 
+      // Don't set global loading true here to avoid full screen flicker,
+      // but we could if we wanted to show it's updating.
       // Let's just update quietly or use a small indicator if needed.
       // User complaint was "not reflecting", so we must update data.
       const loc = locations[currentIndex];
@@ -244,9 +283,22 @@ export function Render() {
     flexDirection: isLandscapeRibbon ? 'row' : 'column',
     justifyContent: isLandscapeRibbon ? 'space-between' : 'space-between',
     alignItems: isLandscapeRibbon ? 'center' : 'stretch',
-    padding: isLandscapeRibbon ? '1rem 3rem' : '3rem',
+    padding: '4rem', // Increased safe zone (Giving Content "Air")
     fontFamily: 'inherit',
     textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+  };
+
+  const glassCardStyle: React.CSSProperties = {
+    background: 'rgba(255, 255, 255, 0.05)', // Very light white
+    backdropFilter: 'blur(20px)', // Premium blur
+    borderRadius: '1.5rem',
+    padding: '2rem',
+    border: '1px solid rgba(255, 255, 255, 0.1)', // Subtle border
+    boxShadow: '0 20px 50px rgba(0,0,0,0.3)', // "Float" effect
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
   };
 
   const getTransitionStyle = (): React.CSSProperties => {
@@ -294,6 +346,7 @@ export function Render() {
       objectFit: 'cover'
     };
 
+    // 1. Manual Image/Video
     if (bgType === 'image' && bgUrl && !bgError) {
       if (isVideo(bgUrl)) {
         return (
@@ -314,12 +367,52 @@ export function Render() {
         />
       );
     }
+
+    // 2. Solid Color
     if (bgType === 'solid') {
       return <div style={{ ...commonStyle, backgroundColor: bgColor }} />;
     }
-    // Dynamic (Default or Fallback)
-    return <div style={{ ...commonStyle, background: getDynamicBackground(currentCondition) }} />;
+
+    // 3. Dynamic (Default) - Try Image first, then Fallback Gradient
+    // We treat "Dynamic Image Error" separately from "Manual Image Error" if we want,
+    // but reusing bgError might be tricky if we switch modes. 
+    // Actually, for dynamic, let's just use a separate img logic or valid path.
+    // If dynamic image fails, we show the gradient div behind it?
+    // A clean way: Render the gradient div ALWAYS (or as fallback), and put the image on top.
+
+    const dynamicImgUrl = getDynamicBackgroundImage(currentCondition);
+    const dynamicGradient = getDynamicBackground(currentCondition);
+
+    return (
+      <>
+        {/* Fallback Gradient (Always rendered behind, or visible if image fails/loads) */}
+        <div style={{ ...commonStyle, background: dynamicGradient }} />
+
+        {/* Dynamic Image Overlay */}
+        <img
+          src={dynamicImgUrl}
+          alt={currentCondition}
+          style={{ ...commonStyle, opacity: opacityValue }} // Re-apply opacity
+          onError={(e) => {
+            e.currentTarget.style.display = 'none'; // Hide broken image, revealing gradient
+          }}
+        />
+      </>
+    );
   };
+
+  const renderGradientOverlay = () => (
+    <div style={{
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      width: '100%',
+      height: '40%',
+      background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
+      zIndex: 0,
+      pointerEvents: 'none'
+    }} />
+  );
 
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -424,8 +517,12 @@ export function Render() {
     <div className="weather-app" style={containerStyle}>
       {renderBackground()}
 
+      {renderGradientOverlay()}
+
       {/* Content Wrapper for Transitions */}
       <div style={{
+        position: 'relative', // Ensure z-index works
+        zIndex: 1,
         display: 'flex',
         flex: 1,
         flexDirection: isLandscapeRibbon ? 'row' : 'column',
@@ -440,7 +537,7 @@ export function Render() {
 
             {/* 1. Header (Stacked) */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '2rem' }}>
-              <div style={{ fontSize: '3rem', fontWeight: 'bold', lineHeight: 1.1 }}>
+              <div style={{ fontSize: '3.5rem', fontWeight: 'bold', lineHeight: 1.1 }}>
                 {currentLocation.label || weatherData.current.city || displayName}
               </div>
               <div style={{ fontSize: '2.5rem', fontWeight: 'bold', marginTop: '0.5rem' }}>{formatTime(currentTime)}</div>
@@ -449,34 +546,34 @@ export function Render() {
 
             {/* 2. Hero (Stacked) */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '2rem' }}>
-              <div className="weather-icon-3d" style={{ fontSize: '9rem', marginBottom: '1rem' }}>{weatherData.current.icon}</div>
-              <div style={{ fontSize: '7rem', fontWeight: 'bold', lineHeight: 0.9 }}>
+              <div className="weather-icon-3d" style={{ marginBottom: '1rem', width: '12rem', height: '12rem' }}>
+                <WeatherIcon icon={weatherData.current.icon} size="100%" />
+              </div>
+              <div style={{ fontSize: '7rem', fontWeight: '900', lineHeight: 0.9 }}>
                 {Math.round(weatherData.current.temp)}{unitLabel}
               </div>
-              <div style={{ fontSize: '2rem', marginTop: '0.5rem', fontWeight: '500' }}>{weatherData.current.condition}</div>
+              <div style={{ fontSize: '2rem', marginTop: '0.5rem', fontWeight: '400', opacity: 0.8 }}>{weatherData.current.condition}</div>
             </div>
 
-            {/* 3. Secondary Details (Option B: Vertical Stack) */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', fontSize: '1.6rem', opacity: 0.8, marginBottom: '2rem', width: '100%', alignItems: 'center' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-around', width: '100%' }}>
-                <span>🌡️ {Math.round(weatherData.current.feelsLike)}°</span>
-                <span>💧 {weatherData.current.humidity}%</span>
+            {/* 3. Secondary Details (Glass Card) */}
+            <div style={{ ...glassCardStyle, width: '100%', marginBottom: '2rem', gap: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-around', width: '100%', fontSize: '1.6rem', opacity: 0.9 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Thermometer size="2rem" strokeWidth={1.5} /> {Math.round(weatherData.current.feelsLike)}°</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Droplets size="2rem" strokeWidth={1.5} /> {weatherData.current.humidity}%</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-around', width: '100%' }}>
-                <span>💨 {Math.round(weatherData.current.wind)}</span>
-                <span>🌧️ {weatherData.current.precip}%</span>
+              <div style={{ display: 'flex', justifyContent: 'space-around', width: '100%', fontSize: '1.6rem', opacity: 0.9 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Wind size="2rem" strokeWidth={1.5} /> {Math.round(weatherData.current.wind)}</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CloudRain size="2rem" strokeWidth={1.5} /> {weatherData.current.precip}%</span>
               </div>
             </div>
 
-            {/* 4. Forecast (Vertical List) */}
+            {/* 4. Forecast (Vertical List - Glass Card) */}
             {forecastRange !== 'none' && (
               <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1rem',
+                ...glassCardStyle,
                 width: '100%',
-                borderTop: `1px solid ${fontColor}`,
-                paddingTop: '1.5rem'
+                padding: '1.5rem',
+                gap: '1.5rem'
               }}>
                 {weatherData.forecast.map((day: any, i: number) => (
                   <div key={i} className="weather-forecast-item" style={{
@@ -489,7 +586,9 @@ export function Render() {
                     gap: '1rem' // Added explicit gap
                   }}>
                     <div className="weather-forecast-day" style={{ width: '30%', textAlign: 'left' }}>{day.day}</div>
-                    <div className="weather-forecast-icon weather-icon-3d" style={{ width: '30%', textAlign: 'center', fontSize: '2.5rem' }}>{day.icon}</div>
+                    <div className="weather-forecast-icon weather-icon-3d" style={{ width: '30%', textAlign: 'center' }}>
+                      <WeatherIcon icon={day.icon} size="3.5rem" />
+                    </div>
                     <div className="weather-forecast-temp" style={{ width: '30%', textAlign: 'right' }}>{Math.round(day.temp)}°</div>
                   </div>
                 ))}
@@ -498,41 +597,45 @@ export function Render() {
           </div>
         ) : isExtremeRibbon ? (
           // EXTREME RIBBON LAYOUT (> 3.5)
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '0 3rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
 
             {/* LEFT: City, Icon, Temp, Condition */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-              <div style={{ fontSize: '3rem', fontWeight: 'bold', marginBottom: '0.5rem', lineHeight: 1.1 }}>
+              <div style={{ fontSize: '3.5rem', fontWeight: 'bold', marginBottom: '0.5rem', lineHeight: 1.1 }}>
                 {currentLocation.label || weatherData.current.city || displayName}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                <div className="weather-icon-3d" style={{ fontSize: '7rem' }}>{weatherData.current.icon}</div>
-                <div style={{ fontSize: '7rem', fontWeight: 'bold', lineHeight: 1 }}>
+                <div className="weather-icon-3d" style={{ width: '10rem', height: '10rem' }}>
+                  <WeatherIcon icon={weatherData.current.icon} size="100%" />
+                </div>
+                <div style={{ fontSize: '7rem', fontWeight: '900', lineHeight: 1 }}>
                   {Math.round(weatherData.current.temp)}{unitLabel}
                 </div>
               </div>
-              <div style={{ fontSize: '2.5rem', marginTop: '0.5rem', fontWeight: '500' }}>{weatherData.current.condition}</div>
+              <div style={{ fontSize: '2.5rem', marginTop: '0.5rem', fontWeight: '400', opacity: 0.8 }}>{weatherData.current.condition}</div>
             </div>
 
             {/* CENTER: Forecast & Secondary Stats */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, padding: '0 4rem' }}>
-              {/* Forecast */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, padding: '0 2rem', gap: '1.5rem' }}>
+              {/* Forecast (Glass) */}
               {forecastRange !== 'none' && (
-                <div style={{ display: 'flex', gap: '3rem', marginBottom: '1.5rem', width: '100%', justifyContent: 'center' }}>
+                <div style={{ ...glassCardStyle, flexDirection: 'row', gap: '3rem', width: 'auto', minWidth: '50%' }}>
                   {weatherData.forecast.map((day: any, i: number) => (
                     <div key={i} className="weather-forecast-item" style={{ minWidth: '70px' }}>
                       <div className="weather-forecast-day">{day.day}</div>
-                      <div className="weather-forecast-icon weather-icon-3d">{day.icon}</div>
+                      <div className="weather-forecast-icon weather-icon-3d">
+                        <WeatherIcon icon={day.icon} size="4rem" />
+                      </div>
                       <div className="weather-forecast-temp">{Math.round(day.temp)}°</div>
                     </div>
                   ))}
                 </div>
               )}
-              {/* Secondary Stats (Moved Below Forecast) */}
-              <div style={{ display: 'flex', gap: '3rem', fontSize: '1.8rem', opacity: 0.8 }}>
-                <span>🌡️ {Math.round(weatherData.current.feelsLike)}°</span>
-                <span>💧 {weatherData.current.humidity}%</span>
-                <span>💨 {Math.round(weatherData.current.wind)}</span>
+              {/* Secondary Stats (Glass) */}
+              <div style={{ ...glassCardStyle, flexDirection: 'row', gap: '3rem', fontSize: '1.8rem', opacity: 0.9 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Thermometer size="2.5rem" strokeWidth={1.5} /> {Math.round(weatherData.current.feelsLike)}°</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Droplets size="2.5rem" strokeWidth={1.5} /> {weatherData.current.humidity}%</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Wind size="2.5rem" strokeWidth={1.5} /> {Math.round(weatherData.current.wind)}</span>
               </div>
             </div>
 
@@ -556,7 +659,7 @@ export function Render() {
               textAlign: 'left',
               opacity: 0.9
             }}>
-              <div style={{ fontSize: '3rem', fontWeight: 'bold', marginBottom: '0.5rem', lineHeight: 1.1 }}>
+              <div style={{ fontSize: '3.5rem', fontWeight: 'bold', marginBottom: '0.5rem', lineHeight: 1.1 }}>
                 {currentLocation.label || weatherData.current.city || displayName}
               </div>
               <div style={{ fontSize: '5.5rem', fontWeight: 'bold', lineHeight: 1 }}>
@@ -576,38 +679,40 @@ export function Render() {
               alignItems: 'center'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '4rem', marginBottom: '1rem' }}>
-                <div className="weather-icon-3d" style={{ fontSize: '10rem' }}>{weatherData.current.icon}</div>
+                <div className="weather-icon-3d" style={{ width: '14rem', height: '14rem' }}>
+                  <WeatherIcon icon={weatherData.current.icon} size="100%" />
+                </div>
                 <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: '9rem', fontWeight: 'bold', lineHeight: 0.9 }}>
+                  <div style={{ fontSize: '9rem', fontWeight: '900', lineHeight: 0.9 }}>
                     {Math.round(weatherData.current.temp)}{unitLabel}
                   </div>
-                  <div style={{ fontSize: '3rem', marginTop: '0.5rem', fontWeight: '500' }}>
+                  <div style={{ fontSize: '3rem', marginTop: '0.5rem', fontWeight: '400', opacity: 0.8 }}>
                     {weatherData.current.condition}
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '3rem', fontSize: '2rem', opacity: 0.8, marginBottom: '1rem' }}>
-                <span>🌡️ {Math.round(weatherData.current.feelsLike)}°</span>
-                <span>💧 {weatherData.current.humidity}%</span>
-                <span>💨 {Math.round(weatherData.current.wind)}</span>
+              <div style={{ ...glassCardStyle, flexDirection: 'row', gap: '3rem', fontSize: '2rem', opacity: 0.9, marginBottom: '1.5rem' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Thermometer size="2.5rem" strokeWidth={1.5} /> {Math.round(weatherData.current.feelsLike)}°</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Droplets size="2.5rem" strokeWidth={1.5} /> {weatherData.current.humidity}%</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Wind size="2.5rem" strokeWidth={1.5} /> {Math.round(weatherData.current.wind)}</span>
               </div>
 
-              {/* FORECAST: REMOVED SLICE LIMIT */}
+              {/* FORECAST */}
               {forecastRange !== 'none' && (
                 <div style={{
-                  display: 'flex',
-                  gap: '2rem',
-                  width: '100%',
-                  justifyContent: 'center',
-                  borderTop: `1px solid ${fontColor}`,
-                  paddingTop: '0.8rem',
-                  opacity: 0.9
+                  ...glassCardStyle,
+                  flexDirection: 'row',
+                  gap: '3rem',
+                  maxWidth: '100%',
+                  flexWrap: 'wrap'
                 }}>
                   {weatherData.forecast.map((day: any, i: number) => (
                     <div key={i} className="weather-forecast-item" style={{ minWidth: '70px' }}>
                       <div className="weather-forecast-day">{day.day}</div>
-                      <div className="weather-forecast-icon weather-icon-3d">{day.icon}</div>
+                      <div className="weather-forecast-icon weather-icon-3d">
+                        <WeatherIcon icon={day.icon} size="4.5rem" />
+                      </div>
                       <div className="weather-forecast-temp">{Math.round(day.temp)}°</div>
                     </div>
                   ))}
@@ -616,58 +721,119 @@ export function Render() {
             </div>
           </>
         ) : (
-          // STANDARD LAYOUT (Original) - Scaled 1.1x
+          // STANDARD / DASHBOARD LAYOUT
           <>
-            <header style={headerStyle}>
-              <div style={{ fontSize: '3.3rem', fontWeight: 'bold' }}>{currentLocation.label || weatherData.current.city || displayName}</div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '3.3rem', fontWeight: 'bold' }}>{formatTime(currentTime)}</div>
-                <div style={{ fontSize: '1.65rem', opacity: 0.8 }}>{formatDate(currentTime)}</div>
+            {/* TOP LEFT HEADER: Location + Time + Date */}
+            <header style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              marginBottom: '1.4rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
+                <MapPin size="2.5rem" />
+                <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>
+                  {currentLocation.label || weatherData.current.city || displayName}
+                </div>
+              </div>
+              <div style={{ fontSize: '1.4rem', opacity: 0.9, marginTop: '0.3rem' }}>
+                {formatTime(currentTime)} • {formatDate(currentTime)}
               </div>
             </header>
 
+            {/* MAIN CONTENT SPLIT: Sidebar (Left) + Hero (Right) */}
             <main style={{
-              flex: 2,
+              flex: 1,
               display: 'flex',
+              flexDirection: 'row',
               alignItems: 'center',
-              justifyContent: 'center',
-              gap: '4.4rem'
+              justifyContent: 'flex-start',
+              gap: '2.8rem',
+              width: '100%',
+              marginBottom: '1.4rem',
+              overflow: 'hidden' // Ensure no spill
             }}>
-              <div className="weather-icon-3d" style={{ fontSize: '13.2rem' }}>{weatherData.current.icon}</div>
-              <div>
-                <div style={{ fontSize: '11rem', lineHeight: 1 }}>
-                  {Math.round(weatherData.current.temp)}{unitLabel}
-                </div>
-                <div style={{ fontSize: '4.4rem' }}>{weatherData.current.condition}</div>
-              </div>
-            </main>
 
-            <div style={{
-              display: 'flex',
-              gap: '4.4rem',
-              fontSize: '2.2rem',
-              marginBottom: '3.3rem',
-              opacity: 0.8,
-              justifyContent: 'center'
-            }}>
-              <span>🌡️ {Math.round(weatherData.current.feelsLike)}°</span>
-              <span>💧 {weatherData.current.humidity}%</span>
-              <span>💨 {Math.round(weatherData.current.wind)} {unit === 'imperial' ? 'mph' : 'km/h'} {weatherData.current.windDir}</span>
-              <span>🌧️ {weatherData.current.precip}%</span>
-            </div>
+              {/* LEFT SIDEBAR: Secondary Details Card */}
+              <div style={{
+                ...glassCardStyle,
+                width: '30%',
+                alignItems: 'flex-start', // Align text left inside card
+                justifyContent: 'space-evenly', // Distribute vertically
+                height: '100%', // Fill available height
+                padding: '2.1rem',
+                gap: '1.4rem'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem', fontSize: '1.6rem', width: '100%' }}>
+                  <Thermometer size="2.1rem" strokeWidth={1.5} />
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '1.1rem', opacity: 0.7 }}>Feels Like</span>
+                    <span>{Math.round(weatherData.current.feelsLike)}°</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem', fontSize: '1.6rem', width: '100%' }}>
+                  <Wind size="2.1rem" strokeWidth={1.5} />
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '1.1rem', opacity: 0.7 }}>Wind</span>
+                    <span>{Math.round(weatherData.current.wind)} {unit === 'imperial' ? 'mph' : 'km/h'} {weatherData.current.windDir}</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem', fontSize: '1.6rem', width: '100%' }}>
+                  <Droplets size="2.1rem" strokeWidth={1.5} />
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '1.1rem', opacity: 0.7 }}>Humidity</span>
+                    <span>{weatherData.current.humidity}%</span>
+                  </div>
+                </div>
+
+                {/* Precipitation (Replaced UV Index) */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem', fontSize: '1.6rem', width: '100%' }}>
+                  <CloudRain size="2.1rem" strokeWidth={1.5} />
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '1.1rem', opacity: 0.7 }}>Precipitation</span>
+                    <span>{weatherData.current.precip}%</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* RIGHT HERO: Big Temp & Icon in open space */}
+              <div style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'row', // Horizontal layout for hero
+                alignItems: 'center',
+                justifyContent: 'center', // Center in remaining space
+                gap: '3.6rem'
+              }}>
+                <div style={{ fontSize: '12.6rem', fontWeight: '900', lineHeight: 0.8, letterSpacing: '-0.5rem' }}>
+                  {Math.round(weatherData.current.temp)}°
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                  <div className="weather-icon-3d" style={{ width: '10rem', height: '10rem', marginBottom: '1rem' }}>
+                    <WeatherIcon icon={weatherData.current.icon} size="100%" />
+                  </div>
+                  <div style={{ fontSize: '3.2rem', fontWeight: '500' }}>{weatherData.current.condition}</div>
+                </div>
+              </div>
+
+            </main>
 
             {forecastRange !== 'none' && (
               <footer style={{
-                display: 'flex',
-                gap: '2.2rem',
-                borderTop: `1px solid ${fontColor}`,
-                paddingTop: '2.2rem',
-                overflow: 'hidden'
+                ...glassCardStyle,
+                flexDirection: 'row',
+                gap: '3rem',
+                width: '100%',
+                marginTop: 'auto' // Push to bottom
               }}>
                 {weatherData.forecast.map((day: any, i: number) => (
                   <div key={i} className="weather-forecast-item" style={{ flex: 1 }}>
                     <div className="weather-forecast-day">{day.day}</div>
-                    <div className="weather-forecast-icon weather-icon-3d">{day.icon}</div>
+                    <div className="weather-forecast-icon weather-icon-3d">
+                      <WeatherIcon icon={day.icon} size="6rem" />
+                    </div>
                     <div className="weather-forecast-temp">{Math.round(day.temp)}°</div>
                   </div>
                 ))}

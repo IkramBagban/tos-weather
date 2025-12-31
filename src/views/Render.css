@@ -99,9 +99,11 @@
 
 /* Larger icon in forecast */
 .weather-forecast-icon {
-  font-size: 2.8rem !important;
+  font-size: 4.5rem !important;
+  /* Increased from 2.8rem */
   margin: 0.5rem 0;
-  filter: drop-shadow(0 0.1rem 0.2rem rgba(0, 0, 0, 0.4));
+  filter: drop-shadow(0 0.2rem 0.4rem rgba(0, 0, 0, 0.5));
+  /* Deeper shadow to match 3D style */
 }
 
 /* Larger temp in forecast */
