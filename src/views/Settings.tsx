@@ -143,9 +143,9 @@ export function Settings() {
   };
 
   const selectFile = (file: any) => {
-    // Try to get a valid URL
-    const url = file.publicUrls?.[0] || file.url;
-    
+    // Try to get a valid URL from various possible fields
+    const url = file.publicUrls?.[0] || file.publicUrl || file.url || file.thumbUrl;
+
     if (url) {
       console.log('Selected Media:', file.name, url);
       setBackgroundUrl(url);
@@ -278,8 +278,9 @@ export function Settings() {
 
             {/* File Items */}
             {mediaFiles.map(file => {
-              const fileUrl = file.thumbnailUrl || file.publicUrls?.[0] || file.url;
-              const isSelected = backgroundUrl === (file.publicUrls?.[0] || file.url);
+              const fileUrl = file.thumbUrl || file.thumbnailUrl || file.publicUrls?.[0] || file.publicUrl || file.url;
+              const resolvedUrl = file.publicUrls?.[0] || file.publicUrl || file.url || file.thumbUrl;
+              const isSelected = backgroundUrl === resolvedUrl;
 
               return (
                 <div key={file.id} onClick={() => selectFile(file)} style={{
