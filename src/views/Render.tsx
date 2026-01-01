@@ -149,8 +149,11 @@ export function Render() {
         console.log('Requested daily:', count, 'Received:', daily?.length);
         forecast = daily.slice(0, count).map((f: any) => ({
           day: new Date(f.Timestamp * 1000).toLocaleDateString([], { weekday: 'short' }),
-          temp: f.MaxTemp,
+          temp: f.MaxTemp, // Keep for backward compat or primary display
+          min: f.MinTemp,
+          max: f.MaxTemp,
           icon: f.Label,
+          isDaily: true // Flag to distinguish
         }));
       }
 
@@ -269,9 +272,10 @@ export function Render() {
   const displayName = currentLocation.label || weatherData?.current?.city || (currentLocation.type === 'auto' ? 'Current Location' : 'No Location Set');
 
   const aspectRatio = useUiAspectRatio();
-  const isLandscapeRibbon = aspectRatio > 2.5;
+  const isLandscapeRibbon = aspectRatio > 2.6;
   const isExtremeRibbon = aspectRatio > 3.5;
   const isVerticalStrip = aspectRatio < 0.6;
+  const isWideCompact = aspectRatio > 1.8 && aspectRatio <= 2.6;
 
   const containerStyle: React.CSSProperties = {
     color: fontColor,
@@ -724,23 +728,25 @@ export function Render() {
           // STANDARD / DASHBOARD LAYOUT
           <>
             {/* TOP LEFT HEADER: Location + Time + Date */}
+            {/* TOP LEFT HEADER: Location + Time + Date */}
             <header style={{
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'flex-start',
-              marginBottom: '1.4rem'
+              marginBottom: isWideCompact ? '0.5rem' : '1.4rem'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
-                <MapPin size="2.5rem" />
-                <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: isWideCompact ? '0.5rem' : '0.7rem' }}>
+                <MapPin size={isWideCompact ? "2rem" : "2.5rem"} />
+                <div style={{ fontSize: isWideCompact ? '2rem' : '2.5rem', fontWeight: 'bold' }}>
                   {currentLocation.label || weatherData.current.city || displayName}
                 </div>
               </div>
-              <div style={{ fontSize: '1.4rem', opacity: 0.9, marginTop: '0.3rem' }}>
+              <div style={{ fontSize: isWideCompact ? '1.1rem' : '1.4rem', opacity: 0.9, marginTop: isWideCompact ? '0.2rem' : '0.3rem' }}>
                 {formatTime(currentTime)} • {formatDate(currentTime)}
               </div>
             </header>
 
+            {/* MAIN CONTENT SPLIT: Sidebar (Left) + Hero (Right) */}
             {/* MAIN CONTENT SPLIT: Sidebar (Left) + Hero (Right) */}
             <main style={{
               flex: 1,
@@ -748,12 +754,13 @@ export function Render() {
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'flex-start',
-              gap: '2.8rem',
+              gap: isWideCompact ? '2rem' : '2.8rem',
               width: '100%',
-              marginBottom: '1.4rem',
+              marginBottom: isWideCompact ? '0.5rem' : '1.4rem',
               overflow: 'hidden' // Ensure no spill
             }}>
 
+              {/* LEFT SIDEBAR: Secondary Details Card */}
               {/* LEFT SIDEBAR: Secondary Details Card */}
               <div style={{
                 ...glassCardStyle,
@@ -761,43 +768,44 @@ export function Render() {
                 alignItems: 'flex-start', // Align text left inside card
                 justifyContent: 'space-evenly', // Distribute vertically
                 height: '100%', // Fill available height
-                padding: '2.1rem',
-                gap: '1.4rem'
+                padding: isWideCompact ? '1.5rem' : '2.1rem',
+                gap: isWideCompact ? '0.8rem' : '1.4rem'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem', fontSize: '1.6rem', width: '100%' }}>
-                  <Thermometer size="2.1rem" strokeWidth={1.5} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem', fontSize: isWideCompact ? '1.4rem' : '1.8rem', width: '100%' }}>
+                  <Thermometer size={isWideCompact ? "1.8rem" : "2.1rem"} strokeWidth={1.5} />
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '1.1rem', opacity: 0.7 }}>Feels Like</span>
+                    <span style={{ fontSize: isWideCompact ? '1rem' : '1.3rem', opacity: 0.7 }}>Feels Like</span>
                     <span>{Math.round(weatherData.current.feelsLike)}°</span>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem', fontSize: '1.6rem', width: '100%' }}>
-                  <Wind size="2.1rem" strokeWidth={1.5} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem', fontSize: isWideCompact ? '1.4rem' : '1.8rem', width: '100%' }}>
+                  <Wind size={isWideCompact ? "1.8rem" : "2.1rem"} strokeWidth={1.5} />
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '1.1rem', opacity: 0.7 }}>Wind</span>
+                    <span style={{ fontSize: isWideCompact ? '1rem' : '1.3rem', opacity: 0.7 }}>Wind</span>
                     <span>{Math.round(weatherData.current.wind)} {unit === 'imperial' ? 'mph' : 'km/h'} {weatherData.current.windDir}</span>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem', fontSize: '1.6rem', width: '100%' }}>
-                  <Droplets size="2.1rem" strokeWidth={1.5} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem', fontSize: isWideCompact ? '1.4rem' : '1.8rem', width: '100%' }}>
+                  <Droplets size={isWideCompact ? "1.8rem" : "2.1rem"} strokeWidth={1.5} />
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '1.1rem', opacity: 0.7 }}>Humidity</span>
+                    <span style={{ fontSize: isWideCompact ? '1rem' : '1.3rem', opacity: 0.7 }}>Humidity</span>
                     <span>{weatherData.current.humidity}%</span>
                   </div>
                 </div>
 
                 {/* Precipitation (Replaced UV Index) */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem', fontSize: '1.6rem', width: '100%' }}>
-                  <CloudRain size="2.1rem" strokeWidth={1.5} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem', fontSize: isWideCompact ? '1.4rem' : '1.8rem', width: '100%' }}>
+                  <CloudRain size={isWideCompact ? "1.8rem" : "2.1rem"} strokeWidth={1.5} />
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '1.1rem', opacity: 0.7 }}>Precipitation</span>
+                    <span style={{ fontSize: isWideCompact ? '1rem' : '1.3rem', opacity: 0.7 }}>Precipitation</span>
                     <span>{weatherData.current.precip}%</span>
                   </div>
                 </div>
               </div>
 
+              {/* RIGHT HERO: Big Temp & Icon in open space */}
               {/* RIGHT HERO: Big Temp & Icon in open space */}
               <div style={{
                 flex: 1,
@@ -805,16 +813,16 @@ export function Render() {
                 flexDirection: 'row', // Horizontal layout for hero
                 alignItems: 'center',
                 justifyContent: 'center', // Center in remaining space
-                gap: '3.6rem'
+                gap: isWideCompact ? '2rem' : '3.6rem'
               }}>
-                <div style={{ fontSize: '12.6rem', fontWeight: '900', lineHeight: 0.8, letterSpacing: '-0.5rem' }}>
+                <div style={{ fontSize: isWideCompact ? '10rem' : '12.6rem', fontWeight: '700', lineHeight: 0.8, letterSpacing: isWideCompact ? '-0.3rem' : '-0.5rem' }}>
                   {Math.round(weatherData.current.temp)}°
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                  <div className="weather-icon-3d" style={{ width: '10rem', height: '10rem', marginBottom: '1rem' }}>
+                  <div className="weather-icon-3d" style={{ width: isWideCompact ? '8rem' : '10rem', height: isWideCompact ? '8rem' : '10rem', marginBottom: isWideCompact ? '0.8rem' : '1rem' }}>
                     <WeatherIcon icon={weatherData.current.icon} size="100%" />
                   </div>
-                  <div style={{ fontSize: '3.2rem', fontWeight: '500' }}>{weatherData.current.condition}</div>
+                  <div style={{ fontSize: isWideCompact ? '2.5rem' : '3.2rem', fontWeight: '500' }}>{weatherData.current.condition}</div>
                 </div>
               </div>
 
@@ -824,17 +832,26 @@ export function Render() {
               <footer style={{
                 ...glassCardStyle,
                 flexDirection: 'row',
-                gap: '3rem',
+                gap: isWideCompact ? '2rem' : '3rem',
                 width: '100%',
-                marginTop: 'auto' // Push to bottom
+                marginTop: 'auto', // Push to bottom
+                padding: isWideCompact ? '1.5rem' : '2rem'
               }}>
                 {weatherData.forecast.map((day: any, i: number) => (
-                  <div key={i} className="weather-forecast-item" style={{ flex: 1 }}>
+                  <div key={i} className="weather-forecast-item" style={{ flex: 1, fontSize: isWideCompact ? '0.85em' : '1em' }}>
                     <div className="weather-forecast-day">{day.day}</div>
                     <div className="weather-forecast-icon weather-icon-3d">
-                      <WeatherIcon icon={day.icon} size="6rem" />
+                      <WeatherIcon icon={day.icon} size={isWideCompact ? "4rem" : "6rem"} />
                     </div>
-                    <div className="weather-forecast-temp">{Math.round(day.temp)}°</div>
+                    <div className="weather-forecast-temp">
+                      {day.isDaily ? (
+                        <span>
+                          <span style={{ fontSize: '1.15em' }}>{Math.round(day.max)}°</span><span style={{ opacity: 0.7, fontWeight: 200 }}>/{Math.round(day.min)}°</span>
+                        </span>
+                      ) : (
+                        <>{Math.round(day.temp)}°</>
+                      )}
+                    </div>
                   </div>
                 ))}
               </footer>
