@@ -555,7 +555,7 @@ export function Render() {
               <div className="weather-icon-3d" style={{ marginBottom: '1rem', width: '12rem', height: '12rem' }}>
                 <WeatherIcon icon={weatherData.current.icon} size="100%" />
               </div>
-              <div style={{ fontSize: '7rem', fontWeight: '900', lineHeight: 0.9 }}>
+              <div style={{ fontSize: '7rem', fontWeight: '700', lineHeight: 0.9 }}>
                 {Math.round(weatherData.current.temp)}{unitLabel}
               </div>
               <div style={{ fontSize: '2rem', marginTop: '0.5rem', fontWeight: '400', opacity: 0.8 }}>{weatherData.current.condition}</div>
@@ -620,7 +620,7 @@ export function Render() {
               <div className="weather-icon-3d" style={{ marginBottom: '0.5rem', width: '10rem', height: '10rem' }}>
                 <WeatherIcon icon={weatherData.current.icon} size="100%" />
               </div>
-              <div style={{ fontSize: '8rem', fontWeight: 'bold', lineHeight: 0.9 }}>
+              <div style={{ fontSize: '8rem', fontWeight: '600', lineHeight: 0.9 }}>
                 {Math.round(weatherData.current.temp)}{unitLabel}
               </div>
               <div style={{ fontSize: '2.2rem', marginTop: '0.5rem', fontWeight: '500', opacity: 0.8 }}>
@@ -732,7 +732,7 @@ export function Render() {
                 <WeatherIcon icon={weatherData.current.icon} size="100%" />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                <div style={{ fontSize: '6rem', fontWeight: '900', lineHeight: 0.9 }}>
+                <div style={{ fontSize: '6rem', fontWeight: '700', lineHeight: 0.9 }}>
                   {Math.round(weatherData.current.temp)}{unitLabel}
                 </div>
                 <div style={{ fontSize: '1.8rem', fontWeight: '500', opacity: 0.8 }}>
@@ -827,7 +827,7 @@ export function Render() {
                   <WeatherIcon icon={weatherData.current.icon} size="100%" />
                 </div>
                 <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: isUltraWide ? '6.5rem' : '9rem', fontWeight: '900', lineHeight: 0.9 }}>
+                  <div style={{ fontSize: isUltraWide ? '6.5rem' : '9rem', fontWeight: '700', lineHeight: 0.9 }}>
                     {Math.round(weatherData.current.temp)}{unitLabel}
                   </div>
                   <div style={{ fontSize: isUltraWide ? '2.2rem' : '3rem', marginTop: '0.5rem', fontWeight: '400', opacity: 0.8 }}>
@@ -955,8 +955,8 @@ export function Render() {
                 justifyContent: 'center', // Center in remaining space
                 gap: isWideCompact ? '2rem' : '3.6rem'
               }}>
-                <div style={{ fontSize: isWideCompact ? '10rem' : '12.6rem', fontWeight: '700', lineHeight: 0.8, letterSpacing: isWideCompact ? '-0.3rem' : '-0.5rem' }}>
-                  {Math.round(weatherData.current.temp)}°
+                <div style={{ fontSize: isWideCompact ? '10rem' : '12.6rem', fontWeight: '600', lineHeight: 0.8, letterSpacing: isWideCompact ? '-0.3rem' : '-0.5rem' }}>
+                  {Math.round(weatherData.current.temp)}{unitLabel}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                   <div className="weather-icon-3d" style={{ width: isWideCompact ? '8rem' : '10rem', height: isWideCompact ? '8rem' : '10rem', marginBottom: isWideCompact ? '0.8rem' : '1rem' }}>
