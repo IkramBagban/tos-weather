@@ -88,8 +88,15 @@ const WeatherIcon = ({ icon, size = '100%', className }: { icon: string; size?: 
 };
 
 export function Render() {
+  // Move aspect ratio hook to top to drive conditional scaling
+  const aspectRatio = useUiAspectRatio();
   const [isUiScaleLoading, uiScale] = useUiScaleStoreState();
-  useUiScaleToSetRem(uiScale);
+
+  // Boost scale by 1.5x for Square/Portrait-ish layouts (0.75 - 1.0) to fill space better.
+  // Explicitly excludes 4:3 (1.33).
+  const effectiveScale = (aspectRatio >= 0.70 && aspectRatio <= 1.05) ? uiScale * 1.5 : uiScale;
+
+  useUiScaleToSetRem(effectiveScale);
 
   // Store Hooks
   const [isLocationsLoading, locations] = useLocationsState();
@@ -271,7 +278,7 @@ export function Render() {
   // The WEATHER DATA is guaranteed to match this index because of the pre-fetch logic.
   const displayName = currentLocation.label || weatherData?.current?.city || (currentLocation.type === 'auto' ? 'Current Location' : 'No Location Set');
   /* Removed JS-based layout logic in favor of CSS media queries - WAIT, User wanted INLINE. Restoring inline. */
-  const aspectRatio = useUiAspectRatio();
+  // aspectRatio is now defined at the top of the component
   const isLandscapeRibbon = aspectRatio > 2.55;
   const isExtremeRibbon = aspectRatio > 3.2; // Lowered to capture 31:9 (3.44)
   const isVerticalStrip = aspectRatio < 0.6;
